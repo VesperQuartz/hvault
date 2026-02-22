@@ -1,1 +1,2 @@
-export { default } from "@workspace/ui/postcss.config";
+export { default } from "@hvault/ui/postcss.config";
+

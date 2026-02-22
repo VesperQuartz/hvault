@@ -1,0 +1,44 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "hvault",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-01-25",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"vars": {
+		"MY_VAR": "my-variable"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "CACHE",
+			"id": "e26b484ddff34e1ea361043f732a8877"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "STORE",
+			"bucket_name": "hvault"
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "hvault",
+			"database_id": "18ad8903-5744-4744-a1b1-04b853e8fc2b",
+			"migrations_dir": "drizzle"
+		}
+	],
+	// "ai": {
+	//   "binding": "AI"
+	// },
+	"observability": {
+		"enabled": true,
+		"head_sampling_rate": 1
+	},
+	"triggers": {
+		"crons": [
+			"* * * * *"
+		]
+	}
+}
