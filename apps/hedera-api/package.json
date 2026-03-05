@@ -1,0 +1,25 @@
+{
+	"name": "hedera-api",
+	"type": "module",
+	"scripts": {
+		"dev": "PORT=8000 tsx watch src/index.ts",
+		"build": "tsc",
+		"start": "node dist/index.js"
+	},
+	"dependencies": {
+		"@hashgraph/sdk": "^2.80.0",
+		"@hono/node-server": "^1.19.11",
+		"@hono/standard-validator": "^0.2.2",
+		"dotenv": "^17.3.1",
+		"hono": "^4.12.5",
+		"ky": "^1.14.3",
+		"ts-pattern": "^5.9.0",
+		"zod": "^4.3.6"
+	},
+	"devDependencies": {
+		"@types/node": "^20.11.17",
+		"tsx": "^4.7.1",
+		"typescript": "^5.8.3"
+	}
+}
+

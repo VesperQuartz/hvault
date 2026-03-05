@@ -9,7 +9,7 @@ export const betterAuthOptions: BetterAuthOptions = {
 	/**
 	 * The name of the application.
 	 */
-	appName: "cfhono",
+	appName: "hvault",
 	/**
 	 * Base path for Better Auth.
 	 * @default "/api/auth"

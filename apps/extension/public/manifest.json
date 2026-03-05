@@ -1,9 +1,0 @@
-{
-  "manifest_version": 3,
-  "version": "1.0.0",
-  "short_name": "hvault",
-  "action": {
-    "default_popup": "index.html"
-  },
-  "name": "Secure vault - passwoord manager for browser"
-}

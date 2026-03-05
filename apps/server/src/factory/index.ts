@@ -10,6 +10,17 @@ export type CFBindings = {
 	CACHE: KVNamespace;
 	BETTER_AUTH_URL: string;
 	BETTER_AUTH_SECRET: string;
+	// AWS KMS Configuration
+	AWS_ACCESS_KEY: string;
+	AWS_ACCESS_SECRET: string;
+	AWS_REGION?: string; // Optional, defaults to us-east-1
+	// Hedera HCS Configuration
+	HEDERA_ACCOUNT_ID: string;
+	HEDERA_PRIVATE_KEY: string;
+	HEDERA_PUBLIC_KEY: string;
+	HEDERA_NETWORK?: string; // Optional, defaults to testnet
+	HEDERA_API_URL: string;
+	FRONTEND_URL: string;
 };
 
 export type Env = {

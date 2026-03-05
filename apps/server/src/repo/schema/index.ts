@@ -1,2 +1,2 @@
 export * from "./auth.schema";
-export * from "./user";
+export * from "./records.schema";

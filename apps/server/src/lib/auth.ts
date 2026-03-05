@@ -1,22 +1,36 @@
+import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { admin, bearer, haveIBeenPwned, openAPI } from "better-auth/plugins";
+import { admin, bearer, openAPI } from "better-auth/plugins";
 import { drizzle } from "drizzle-orm/d1";
 import type { CFBindings } from "#/src/factory";
+import { createHederaService } from "#/src/lib/hedera";
+import { createKMSService } from "#/src/lib/kms";
 import { ac, adminRole, customRole, userRole } from "#/src/lib/permission";
 import * as schema from "../repo/schema/index"; // Ensure the schema is imported
 
 export const auth = (env: CFBindings): ReturnType<typeof betterAuth> => {
-	const db = drizzle(env.DB);
+	const db = drizzle(env.DB, {
+		schema,
+	});
+	//@ts-expect-error - Cloudflare Workers types are not up to date
 	return betterAuth({
 		database: drizzleAdapter(db, { provider: "sqlite", schema }),
 		baseURL: env.BETTER_AUTH_URL,
+		trustedOrigins: [
+			"http://localhost:3000",
+			"http://localhost:*",
+			"http://localhost:8787",
+			"http://127.0.0.1:3000",
+			"http://127.0.0.1:8787",
+		],
 		secret: env.BETTER_AUTH_SECRET,
 		emailAndPassword: {
 			enabled: true,
+			autoSignIn: true,
+			requireEmailVerification: false,
 		},
 		plugins: [
-			bearer(),
+			bearer(), // Required for token-based auth from extension
 			openAPI(),
 			admin({
 				ac,
@@ -29,10 +43,10 @@ export const auth = (env: CFBindings): ReturnType<typeof betterAuth> => {
 				defaultRole: "user",
 				adminRoles: ["admin", "superadmin"],
 			}),
-			haveIBeenPwned({
-				customPasswordCompromisedMessage:
-					"Please choose a more secure password.",
-			}),
+			// haveIBeenPwned({
+			// 	customPasswordCompromisedMessage:
+			// 		"Please choose a more secure password.",
+			// }),
 		],
 		databaseHooks: {
 			user: {
@@ -53,12 +67,50 @@ export const auth = (env: CFBindings): ReturnType<typeof betterAuth> => {
 							},
 						};
 					},
+					after: async (user) => {
+						// Initialize KMS key and Hedera topic for new user
+						// Run asynchronously to avoid blocking user signup
+						console.log(`[USER SETUP] Initializing keys for user ${user.id}`);
+
+						try {
+							const kmsService = createKMSService(env);
+							const kmsKeyId = await kmsService.createUserKey(user.id);
+							console.log(`[USER SETUP] KMS key created: ${kmsKeyId}`);
+
+							const hService = createHederaService(env);
+							const topicId = await hService.createUserTopic(user.id);
+
+							if (!topicId)
+								throw new Error(
+									"[USER SETUP] Hedera returned an empty topic ID",
+								);
+							console.log(`[USER SETUP] Hedera topic created: ${topicId}`);
+
+							// Step 3: Save to database
+							const [userKey] = await db
+								.insert(schema.userKeys)
+								.values({
+									id: crypto.randomUUID(),
+									userId: user.id,
+									kmsKeyId,
+									hederaTopicId: topicId,
+								})
+								.returning();
+
+							console.log(
+								`[USER SETUP] Successfully initialized keys for user ${user.id}`,
+								userKey,
+							);
+						} catch (error) {
+							console.error(
+								`[USER SETUP] Failed to initialize keys for user ${user.id}:`,
+								error,
+							);
+							throw error;
+						}
+					},
 				},
 			},
-		},
-		rateLimit: {
-			window: 10,
-			max: 100,
 		},
 	});
 };
