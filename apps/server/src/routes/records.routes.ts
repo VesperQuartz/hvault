@@ -258,6 +258,38 @@ recordsRoutes.get("/", async (c) => {
 });
 
 /**
+ * Get audit history for the authenticated user
+ * GET /records/audit
+ */
+recordsRoutes.get("/audit", async (c) => {
+	const user = c.get("user");
+	const db = c.get("db");
+
+	if (!user) {
+		return c.json({ error: "Unauthorized" }, 401);
+	}
+
+	try {
+		const logs = await db
+			.select()
+			.from(auditLogs)
+			.where(eq(auditLogs.userId, user.id))
+			.orderBy(desc(auditLogs.timestamp));
+
+		return c.json({
+			success: true,
+			logs,
+		});
+	} catch (error) {
+		console.error("[Backend] Audit history fetch failed:", error);
+		return c.json({ 
+			error: "Failed to fetch audit history",
+			details: error instanceof Error ? error.message : "Unknown database error"
+		}, 500);
+	}
+});
+
+/**
  * Get a specific record's metadata
  * GET /records/:id
  */

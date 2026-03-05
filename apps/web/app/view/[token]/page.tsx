@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { shareApi } from "@/lib/api";
+import { shareApi, formatHederaTxId } from "@/lib/api";
 import { Button } from "@hvault/ui/components/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@hvault/ui/components/card";
 import { Alert, AlertDescription } from "@hvault/ui/components/alert";
@@ -160,7 +160,7 @@ export default function ViewSharePage() {
 										<p className="text-muted-foreground">Hedera Proof</p>
 										{info.record.hederaTransactionId ? (
 											<a
-												href={`https://hashscan.io/testnet/transaction/${info.record.hederaTransactionId}`}
+												href={`https://hashscan.io/testnet/transaction/${formatHederaTxId(info.record.hederaTransactionId)}`}
 												target="_blank"
 												rel="noopener noreferrer"
 												className="flex items-center text-primary hover:underline font-medium"
@@ -208,7 +208,7 @@ export default function ViewSharePage() {
 											</p>
 											{fileData.hederaTransaction && (
 												<a
-													href={`https://hashscan.io/testnet/transaction/${fileData.hederaTransaction}`}
+													href={`https://hashscan.io/testnet/transaction/${formatHederaTxId(fileData.hederaTransaction)}`}
 													target="_blank"
 													rel="noopener noreferrer"
 													className="text-sm flex items-center mt-2 text-primary hover:underline"

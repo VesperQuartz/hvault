@@ -19,10 +19,11 @@ import {
 	Trash2,
 	Upload,
 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import DeleteDialog from "@/components/delete-dialog";
 import ShareDialog from "@/components/share-dialog";
-import { queryKeys, recordsApi } from "@/lib/api";
+import { formatHederaTxId, queryKeys, recordsApi } from "@/lib/api";
 
 interface Record {
 	id: string;
@@ -235,17 +236,27 @@ export default function DashboardPage() {
 				</Card>
 			) : (
 				<div>
-					<div className="flex items-center justify-between mb-4">
-						<h2 className="text-2xl font-semibold">
-							All Records ({records.length})
-						</h2>
-						<Button
-							onClick={() => (window.location.href = "/dashboard/upload")}
-							size="sm"
-						>
-							<Plus className="h-4 w-4 mr-2" />
-							Upload New
-						</Button>
+					<div>
+						<div className="flex items-center justify-between mb-4">
+							<h2 className="text-2xl font-semibold">
+								All Records ({records.length})
+							</h2>
+							<div className="flex items-center gap-3">
+								<Link href="/dashboard/audit">
+									<Button variant="outline" size="sm">
+										<Shield className="h-4 w-4 mr-2" />
+										Audit Trail
+									</Button>
+								</Link>
+								<Button
+									onClick={() => (window.location.href = "/dashboard/upload")}
+									size="sm"
+								>
+									<Plus className="h-4 w-4 mr-2" />
+									Upload New
+								</Button>
+							</div>
+						</div>
 					</div>
 
 					<div className="grid gap-4">
@@ -323,7 +334,7 @@ export default function DashboardPage() {
 												</div>
 												{record.hederaTransactionId && (
 													<a
-														href={`https://hashscan.io/testnet/transaction/${record.hederaTransactionId}`}
+														href={`https://hashscan.io/testnet/transaction/${formatHederaTxId(record.hederaTransactionId)}`}
 														target="_blank"
 														rel="noopener noreferrer"
 														className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium"

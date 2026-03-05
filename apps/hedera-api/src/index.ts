@@ -6,7 +6,7 @@ import "dotenv/config";
 import { createHederaService } from "./src/services/hedera.js";
 
 const app = new Hono().basePath("/api");
-console.log(process.env, "ENV");
+
 export const STATE = [
 	"UPLOAD",
 	"ACCESS",
@@ -22,6 +22,32 @@ export const STATE = [
 
 type StateItem = (typeof STATE)[number];
 
+/**
+ * Helper to create hedera service with full environment context
+ */
+const getHederaService = () => createHederaService({
+	HEDERA_ACCOUNT_ID: process.env.HEDERA_ACCOUNT_ID,
+	HEDERA_PRIVATE_KEY: process.env.HEDERA_PRIVATE_KEY,
+	AWS_KMS_KEY_ID: process.env.AWS_KMS_KEY_ID,
+	AWS_ACCESS_KEY: process.env.AWS_ACCESS_KEY,
+	AWS_SECRET_KEY: process.env.AWS_SECRET_KEY,
+	AWS_REGION: process.env.AWS_REGION,
+});
+
+// Add error handler
+app.onError((err, c) => {
+	console.error(`[Hedera API Error] ${err.message}`, err.stack);
+	return c.json({
+		error: "Internal Server Error",
+		message: err.message,
+	}, 500);
+});
+
+// Health check endpoint
+app.get("/health", (c) => {
+	return c.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 app.post(
 	"/hedera/topic",
 	sValidator(
@@ -32,10 +58,8 @@ app.post(
 	),
 	async (c) => {
 		const { userId } = c.req.valid("json");
-		const hederaService = createHederaService({
-			HEDERA_ACCOUNT_ID: process.env.HEDERA_ACCOUNT_ID,
-			HEDERA_PRIVATE_KEY: process.env.HEDERA_PRIVATE_KEY,
-		});
+		console.log(`[Hedera API] Creating topic for user: ${userId}`);
+		const hederaService = getHederaService();
 		const result = await hederaService.createUserTopic(userId);
 		return c.json(result);
 	},
@@ -65,10 +89,8 @@ app.post(
 			userId,
 			fileHash,
 		} = c.req.valid("json");
-		const hederaService = createHederaService({
-			HEDERA_ACCOUNT_ID: process.env.HEDERA_ACCOUNT_ID,
-			HEDERA_PRIVATE_KEY: process.env.HEDERA_PRIVATE_KEY,
-		});
+		console.log(`[Hedera API] Submitting fingerprint for file: ${fileName}`);
+		const hederaService = getHederaService();
 		const result = await hederaService.submitFileFingerprint(topicId, {
 			fileSize: fileSize ?? 0,
 			recordId: recordId ?? "",
@@ -95,10 +117,8 @@ app.post(
 	),
 	async (c) => {
 		const { topicId, recordId, action, userId, metadata } = c.req.valid("json");
-		const hederaService = createHederaService({
-			HEDERA_ACCOUNT_ID: process.env.HEDERA_ACCOUNT_ID,
-			HEDERA_PRIVATE_KEY: process.env.HEDERA_PRIVATE_KEY,
-		});
+		console.log(`[Hedera API] Submitting audit for action: ${action}`);
+		const hederaService = getHederaService();
 		const result = await hederaService.submitRecordAudit(
 			topicId,
 			action as StateItem,
@@ -109,12 +129,13 @@ app.post(
 		return c.json(result);
 	},
 );
+
 serve(
 	{
 		fetch: app.fetch,
-		port: Number(process.env.PORT) || 3000,
+		port: Number(process.env.PORT) || 8000,
 	},
 	(info) => {
-		console.log(`Server is running on http://localhost:${info.port}`);
+		console.log(`Hedera API is running on http://localhost:${info.port}`);
 	},
 );

@@ -50,8 +50,26 @@ export class HederaService {
 	private client: typeof ky;
 
 	constructor(config: HederaConfig) {
+		console.log(`[HederaService] Initializing with API URL: ${config.api_url}/api`);
 		this.client = ky.create({
 			prefixUrl: `${config.api_url}/api`,
+			timeout: 60000, // 60 second timeout for slow blockchain transactions
+			hooks: {
+				beforeError: [
+					async (error) => {
+						const { response } = error;
+						if (response) {
+							try {
+								const body = await response.json();
+								console.error("[HederaService] API Error Response:", body);
+							} catch (e) {
+								console.error("[HederaService] Could not parse error response");
+							}
+						}
+						return error;
+					},
+				],
+			},
 		});
 	}
 
@@ -59,12 +77,22 @@ export class HederaService {
 	 * Create a new topic for a user
 	 */
 	async createUserTopic(userId: string): Promise<string> {
-		const result = await this.client
-			.post("hedera/topic", {
-				json: { userId },
-			})
-			.json<string>();
-		return result;
+		try {
+			// Pre-flight check to ensure API is reachable
+			await this.client.get("health").catch(() => {
+				console.warn("[HederaService] API health check failed, but proceeding...");
+			});
+
+			const result = await this.client
+				.post("hedera/topic", {
+					json: { userId },
+				})
+				.json<string>();
+			return result;
+		} catch (e) {
+			console.error("[HederaService] createUserTopic failed:", e);
+			throw e;
+		}
 	}
 
 	/**
@@ -74,19 +102,24 @@ export class HederaService {
 		topicId: string,
 		message: AuditMessage,
 	): Promise<{ messageId: string; sequenceNumber: string }> {
-		const result = await this.client
-			.post("hedera/audit", {
-				json: {
-					topicId,
-					...message,
-				},
-			})
-			.json<any>();
+		try {
+			const result = await this.client
+				.post("hedera/audit", {
+					json: {
+						topicId,
+						...message,
+					},
+				})
+				.json<any>();
 
-		return {
-			messageId: result.transactionId,
-			sequenceNumber: result.sequenceNumber,
-		};
+			return {
+				messageId: result.transactionId,
+				sequenceNumber: result.sequenceNumber,
+			};
+		} catch (e) {
+			console.error("[HederaService] submitAuditLog failed:", e);
+			throw e;
+		}
 	}
 
 	/**
@@ -96,16 +129,21 @@ export class HederaService {
 		topicId: string,
 		fingerprint: FileFingerprint,
 	): Promise<{ transactionId: string; sequenceNumber: string }> {
-		const result = await this.client
-			.post("hedera/fingerprint", {
-				json: {
-					topicId,
-					...fingerprint,
-				},
-			})
-			.json<any>();
+		try {
+			const result = await this.client
+				.post("hedera/fingerprint", {
+					json: {
+						topicId,
+						...fingerprint,
+					},
+				})
+				.json<any>();
 
-		return result;
+			return result;
+		} catch (e) {
+			console.error("[HederaService] submitFileFingerprint failed:", e);
+			throw e;
+		}
 	}
 
 	/**
@@ -118,19 +156,24 @@ export class HederaService {
 		recordId?: string,
 		metadata?: Record<string, unknown>,
 	): Promise<{ transactionId: string; sequenceNumber: string }> {
-		const result = await this.client
-			.post("hedera/audit", {
-				json: {
-					topicId,
-					action,
-					userId,
-					recordId,
-					metadata,
-				},
-			})
-			.json<any>();
+		try {
+			const result = await this.client
+				.post("hedera/audit", {
+					json: {
+						topicId,
+						action,
+						userId,
+						recordId,
+						metadata,
+					},
+				})
+				.json<any>();
 
-		return result;
+			return result;
+		} catch (e) {
+			console.error("[HederaService] submitRecordAudit failed:", e);
+			throw e;
+		}
 	}
 
 	close() {
@@ -142,8 +185,13 @@ export class HederaService {
  * Factory function to create HederaService from env
  */
 export function createHederaService(env: any): HederaService {
-	// Use the HEDERA_API_URL from the environment bindings
-	return new HederaService({
-		api_url: env.HEDERA_API_URL || "http://localhost:8000",
-	});
+	// Prefer env binding, then fallback to common local dev URLs
+	let api_url = env.HEDERA_API_URL || "http://127.0.0.1:8000";
+	
+	// CRITICAL: In many local environments, 'localhost' resolves to IPv6 [::1] 
+	// while the server is listening on IPv4 127.0.0.1.
+	// Forcing 127.0.0.1 fixes most "Network connection lost" errors.
+	api_url = api_url.replace("localhost", "127.0.0.1");
+	
+	return new HederaService({ api_url });
 }

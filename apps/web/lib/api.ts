@@ -44,6 +44,7 @@ export const queryKeys = {
 		all: ["records"] as const,
 		list: () => [...queryKeys.records.all, "list"] as const,
 		detail: (id: string) => [...queryKeys.records.all, "detail", id] as const,
+		audit: () => [...queryKeys.records.all, "audit"] as const,
 	},
 	shares: {
 		all: ["shares"] as const,
@@ -134,6 +135,26 @@ export const recordsApi = {
 	 */
 	async delete(id: string): Promise<{ success: boolean; message: string }> {
 		return api.delete(`records/${id}`).json();
+	},
+
+	/**
+	 * List audit logs
+	 */
+	async listAudit(): Promise<{
+		success: boolean;
+		logs: Array<{
+			id: string;
+			userId: string;
+			recordId: string | null;
+			action: string;
+			hederaTopicId: string;
+			hederaTransactionId: string;
+			hederaSequenceNumber: string;
+			metadata: string | null;
+			timestamp: number;
+		}>;
+	}> {
+		return api.get("records/audit").json();
 	},
 };
 
@@ -231,4 +252,27 @@ export const shareApi = {
 	}> {
 		return api.get(`share/record/${recordId}`).json();
 	},
+};
+
+/**
+ * Formats a Hedera transaction ID for HashScan URL
+ * Converts 0.0.123@1234567890.123456789 to 0.0.123-1234567890-123456789
+ */
+export const formatHederaTxId = (txId: string | null | undefined) => {
+	if (!txId) return "";
+	
+	// Standard format is accountID@seconds.nanos
+	// HashScan URL usually wants: accountID-seconds-nanos (with dots in account ID kept)
+	try {
+		if (txId.includes("@")) {
+			const [account, timestamp] = txId.split("@");
+			const formatted = `${account}-${timestamp.replace(".", "-")}`;
+			console.log(`[Hedera] Formatting ${txId} -> ${formatted}`);
+			return formatted;
+		}
+		return txId;
+	} catch (e) {
+		console.error("[Hedera] Formatting error:", e);
+		return txId || "";
+	}
 };

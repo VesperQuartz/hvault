@@ -16,7 +16,8 @@ import { Label } from "@hvault/ui/components/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@hvault/ui/components/select";
 import { Input } from "@hvault/ui/components/input";
 import { Alert, AlertDescription } from "@hvault/ui/components/alert";
-import { Copy, Check, ExternalLink } from "lucide-react";
+import { Copy, Check, QrCode, Download } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 interface ShareDialogProps {
 	open: boolean;
@@ -34,6 +35,7 @@ export default function ShareDialog({ open, onOpenChange, record }: ShareDialogP
 		expiresAt: string;
 	} | null>(null);
 	const [copied, setCopied] = useState(false);
+	const [showQR, setShowQR] = useState(false);
 
 	const form = useForm({
 		defaultValues: {
@@ -66,11 +68,35 @@ export default function ShareDialog({ open, onOpenChange, record }: ShareDialogP
 		}
 	};
 
+	const handleDownloadQR = () => {
+		const svg = document.getElementById("share-qr-code");
+		if (!svg) return;
+
+		const svgData = new XMLSerializer().serializeToString(svg);
+		const canvas = document.createElement("canvas");
+		const ctx = canvas.getContext("2d");
+		const img = new Image();
+		
+		img.onload = () => {
+			canvas.width = img.width;
+			canvas.height = img.height;
+			ctx?.drawImage(img, 0, 0);
+			const pngFile = canvas.toDataURL("image/png");
+			const downloadLink = document.createElement("a");
+			downloadLink.download = `QR-${record.fileName}.png`;
+			downloadLink.href = pngFile;
+			downloadLink.click();
+		};
+		
+		img.src = "data:image/svg+xml;base64," + btoa(svgData);
+	};
+
 	const handleClose = () => {
 		setShareLink(null);
 		setError("");
 		form.reset();
 		setCopied(false);
+		setShowQR(false);
 		onOpenChange(false);
 	};
 
@@ -99,17 +125,7 @@ export default function ShareDialog({ open, onOpenChange, record }: ShareDialogP
 						}}
 					>
 						<div className="space-y-4">
-							<form.Field
-								name="expiresInHours"
-								validators={{
-									onChange: ({ value }) => {
-										const hours = parseInt(value);
-										return hours < 1 || hours > 168
-											? "Expiry must be between 1 hour and 7 days"
-											: undefined;
-									},
-								}}
-							>
+							<form.Field name="expiresInHours">
 								{(field) => (
 									<div className="space-y-2">
 										<Label htmlFor={field.name}>Link expires in</Label>
@@ -128,11 +144,6 @@ export default function ShareDialog({ open, onOpenChange, record }: ShareDialogP
 												<SelectItem value="168">7 days</SelectItem>
 											</SelectContent>
 										</Select>
-										{field.state.meta.errors.length > 0 && (
-											<p className="text-sm text-destructive">
-												{field.state.meta.errors.join(", ")}
-											</p>
-										)}
 									</div>
 								)}
 							</form.Field>
@@ -163,39 +174,71 @@ export default function ShareDialog({ open, onOpenChange, record }: ShareDialogP
 						</div>
 					</form>
 				) : (
-					<div className="space-y-4">
-						<div className="space-y-2">
-							<Label>Share Link</Label>
-							<div className="flex space-x-2">
-								<Input
-									readOnly
-									value={shareLink.url}
-									className="flex-1"
-								/>
-								<Button
-									variant="outline"
-									size="icon"
-									onClick={handleCopy}
-								>
-									{copied ? (
-										<Check className="h-4 w-4 text-green-600" />
-									) : (
-										<Copy className="h-4 w-4" />
-									)}
-								</Button>
+					<div className="space-y-6">
+						{showQR ? (
+							<div className="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-xl space-y-4">
+								<div className="bg-white p-4 rounded-lg shadow-sm">
+									<QRCodeSVG 
+										id="share-qr-code"
+										value={shareLink.url} 
+										size={200}
+										level="H"
+										includeMargin={true}
+									/>
+								</div>
+								<div className="flex gap-2">
+									<Button variant="outline" size="sm" onClick={() => setShowQR(false)}>
+										Show Link
+									</Button>
+									<Button variant="secondary" size="sm" onClick={handleDownloadQR}>
+										<Download className="h-4 w-4 mr-2" />
+										Download PNG
+									</Button>
+								</div>
 							</div>
-						</div>
+						) : (
+							<div className="space-y-4">
+								<div className="space-y-2">
+									<Label>Share Link</Label>
+									<div className="flex space-x-2">
+										<Input
+											readOnly
+											value={shareLink.url}
+											className="flex-1"
+										/>
+										<Button
+											variant="outline"
+											size="icon"
+											onClick={handleCopy}
+										>
+											{copied ? (
+												<Check className="h-4 w-4 text-green-600" />
+											) : (
+												<Copy className="h-4 w-4" />
+											)}
+										</Button>
+										<Button
+											variant="outline"
+											size="icon"
+											onClick={() => setShowQR(true)}
+										>
+											<QrCode className="h-4 w-4" />
+										</Button>
+									</div>
+								</div>
 
-						<div className="bg-gray-50 rounded-lg p-3 text-sm">
-							<p className="text-muted-foreground">
-								<span className="font-medium">Expires:</span>{" "}
-								{new Date(shareLink.expiresAt).toLocaleString()}
-							</p>
-						</div>
+								<div className="bg-gray-50 rounded-lg p-3 text-sm">
+									<p className="text-muted-foreground">
+										<span className="font-medium text-gray-900">Expires:</span>{" "}
+										{new Date(shareLink.expiresAt).toLocaleString()}
+									</p>
+								</div>
+							</div>
+						)}
 
 						<Alert>
 							<AlertDescription className="text-xs">
-								Share this link with your doctor. The file will be automatically verified
+								Share this link or QR code with your doctor. The file will be automatically verified
 								against the blockchain before being displayed.
 							</AlertDescription>
 						</Alert>
