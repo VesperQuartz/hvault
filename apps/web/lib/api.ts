@@ -221,7 +221,7 @@ export const shareApi = {
 
 		const blob = await response.blob();
 		// Case-insensitive header check
-		const getHeader = (name: string) => 
+		const getHeader = (name: string) =>
 			response.headers.get(name) || response.headers.get(name.toLowerCase());
 
 		const verified = getHeader("X-File-Verified") === "true";
@@ -252,6 +252,13 @@ export const shareApi = {
 	}> {
 		return api.get(`share/record/${recordId}`).json();
 	},
+
+	/**
+	 * Revoke a share link
+	 */
+	async revokeLink(id: string): Promise<{ success: boolean; message: string }> {
+		return api.delete(`share/${id}`).json();
+	},
 };
 
 /**
@@ -260,13 +267,13 @@ export const shareApi = {
  */
 export const formatHederaTxId = (txId: string | null | undefined) => {
 	if (!txId) return "";
-	
+
 	// Standard format is accountID@seconds.nanos
 	// HashScan URL usually wants: accountID-seconds-nanos (with dots in account ID kept)
 	try {
 		if (txId.includes("@")) {
 			const [account, timestamp] = txId.split("@");
-			const formatted = `${account}-${timestamp.replace(".", "-")}`;
+			const formatted = `${account}-${timestamp?.replace(".", "-")}`;
 			console.log(`[Hedera] Formatting ${txId} -> ${formatted}`);
 			return formatted;
 		}

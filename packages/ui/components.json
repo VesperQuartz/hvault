@@ -1,20 +1,23 @@
 {
-	"$schema": "https://ui.shadcn.com/schema.json",
-	"style": "radix-nova",
-	"rsc": true,
-	"tsx": true,
-	"tailwind": {
-		"config": "",
-		"css": "src/styles/globals.css",
-		"baseColor": "neutral",
-		"cssVariables": true
-	},
-	"iconLibrary": "lucide",
-	"aliases": {
-		"components": "@hvault/ui/components",
-		"utils": "@hvault/ui/utils",
-		"hooks": "@hvault/ui/hooks",
-		"lib": "@hvault/ui/lib",
-		"ui": "@hvault/ui/components"
-	}
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "radix-nova",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/styles/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@hvault/ui/components",
+    "utils": "@hvault/ui/utils",
+    "ui": "@hvault/ui/components",
+    "lib": "@hvault/ui/lib",
+    "hooks": "@hvault/ui/hooks"
+  },
+  "registries": {
+    "@efferd": "https://efferd.com/r/{name}.json"
+  }
 }

@@ -6,12 +6,15 @@ import { shareApi, formatHederaTxId } from "@/lib/api";
 import { Button } from "@hvault/ui/components/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@hvault/ui/components/card";
 import { Alert, AlertDescription } from "@hvault/ui/components/alert";
-import { CheckCircle, XCircle, Shield, ExternalLink, Download, AlertTriangle } from "lucide-react";
+import { CheckCircle, XCircle, Shield, ExternalLink, Download, AlertTriangle, ArrowLeft } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useSession } from "@/lib/auth-client";
+import Link from "next/link";
 
 export default function ViewSharePage() {
 	const params = useParams();
 	const token = params.token as string;
+	const { data: session } = useSession();
 
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
@@ -109,6 +112,25 @@ export default function ViewSharePage() {
 	return (
 		<div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
 			<div className="max-w-4xl mx-auto space-y-6">
+				{/* Top Navigation */}
+				<div className="flex justify-start">
+					{session ? (
+						<Link href="/dashboard">
+							<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
+								<ArrowLeft className="h-4 w-4 mr-2" />
+								Back to Dashboard
+							</Button>
+						</Link>
+					) : (
+						<Link href="/">
+							<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
+								<ArrowLeft className="h-4 w-4 mr-2" />
+								Back to Home
+							</Button>
+						</Link>
+					)}
+				</div>
+
 				{/* Header */}
 				<div className="text-center">
 					<div className="flex items-center justify-center mb-4">

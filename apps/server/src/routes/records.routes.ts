@@ -192,6 +192,8 @@ recordsRoutes.post(
 				hederaTransactionId: auditResult.transactionId,
 				hederaSequenceNumber: auditResult.sequenceNumber,
 				metadata: JSON.stringify({ fileName: file.name, fileSize: file.size }),
+				ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || null,
+				userAgent: c.req.header("user-agent") || null,
 			});
 
 			hederaService.close();
@@ -411,6 +413,8 @@ recordsRoutes.get("/:id/download", async (c) => {
 				hederaTransactionId: auditResult.transactionId,
 				hederaSequenceNumber: auditResult.sequenceNumber,
 				metadata: JSON.stringify({ action: "download" }),
+				ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || null,
+				userAgent: c.req.header("user-agent") || null,
 			});
 
 			hederaService.close();
@@ -492,6 +496,8 @@ recordsRoutes.delete("/:id", async (c) => {
 				hederaTransactionId: auditResult.transactionId,
 				hederaSequenceNumber: auditResult.sequenceNumber,
 				metadata: JSON.stringify({ fileName: record.fileName }),
+				ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || null,
+				userAgent: c.req.header("user-agent") || null,
 			});
 
 			hederaService.close();

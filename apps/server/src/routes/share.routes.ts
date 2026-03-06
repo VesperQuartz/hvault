@@ -98,6 +98,8 @@ shareRoutes.post(
 						shareLinkId,
 						expiresInHours,
 					}),
+					ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || null,
+					userAgent: c.req.header("user-agent") || null,
 				});
 			}
 
@@ -304,6 +306,8 @@ shareRoutes.get("/:token", async (c) => {
 						shareLinkId: shareLink.id,
 						fileName: record.fileName,
 					}),
+					ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || null,
+					userAgent: c.req.header("user-agent") || null,
 				});
 
 				hederaService.close();
@@ -354,6 +358,8 @@ shareRoutes.get("/:token", async (c) => {
 					verified: true,
 					shareLinkId: shareLink.id,
 				}),
+				ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || null,
+				userAgent: c.req.header("user-agent") || null,
 			});
 
 			hederaService.close();
@@ -423,10 +429,11 @@ shareRoutes.get("/record/:recordId", async (c) => {
 			.where(eq(shareLinks.recordId, recordId));
 
 		const now = new Date();
+		const frontendUrl = c.env.FRONTEND_URL || "http://localhost:3000";
 		const formattedLinks = links.map((link) => ({
 			id: link.id,
 			token: link.token,
-			url: `${c.env.BETTER_AUTH_URL || "http://localhost:3000"}/view/${link.token}`,
+			url: `${frontendUrl}/view/${link.token}`,
 			expiresAt: link.expiresAt,
 			isExpired: link.expiresAt < now,
 			accessCount: link.accessCount,
@@ -441,6 +448,45 @@ shareRoutes.get("/record/:recordId", async (c) => {
 	} catch (error) {
 		console.error("List share links error:", error);
 		return c.json({ error: "Failed to fetch share links" }, 500);
+	}
+});
+
+/**
+ * Revoke a share link
+ * DELETE /share/:id
+ * Requires authentication
+ */
+shareRoutes.delete("/:id", async (c) => {
+	const user = c.get("user");
+	const db = c.get("db");
+	const id = c.req.param("id");
+
+	if (!user) {
+		return c.json({ error: "Unauthorized" }, 401);
+	}
+
+	try {
+		// Verify share link belongs to user
+		const shareLink = await db
+			.select()
+			.from(shareLinks)
+			.where(and(eq(shareLinks.id, id), eq(shareLinks.userId, user.id)))
+			.get();
+
+		if (!shareLink) {
+			return c.json({ error: "Share link not found" }, 404);
+		}
+
+		// Delete the share link
+		await db.delete(shareLinks).where(eq(shareLinks.id, id));
+
+		return c.json({
+			success: true,
+			message: "Share link revoked successfully",
+		});
+	} catch (error) {
+		console.error("Revoke share link error:", error);
+		return c.json({ error: "Failed to revoke share link" }, 500);
 	}
 });
 
