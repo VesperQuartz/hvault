@@ -25,22 +25,26 @@ type StateItem = (typeof STATE)[number];
 /**
  * Helper to create hedera service with full environment context
  */
-const getHederaService = () => createHederaService({
-	HEDERA_ACCOUNT_ID: process.env.HEDERA_ACCOUNT_ID,
-	HEDERA_PRIVATE_KEY: process.env.HEDERA_PRIVATE_KEY,
-	AWS_KMS_KEY_ID: process.env.AWS_KMS_KEY_ID,
-	AWS_ACCESS_KEY: process.env.AWS_ACCESS_KEY,
-	AWS_SECRET_KEY: process.env.AWS_SECRET_KEY,
-	AWS_REGION: process.env.AWS_REGION,
-});
+const getHederaService = () =>
+	createHederaService({
+		HEDERA_ACCOUNT_ID: process.env.HEDERA_ACCOUNT_ID,
+		HEDERA_PRIVATE_KEY: process.env.HEDERA_PRIVATE_KEY,
+		AWS_KMS_KEY_ID: process.env.AWS_KMS_KEY_ID,
+		AWS_ACCESS_KEY: process.env.AWS_KMS_ACCESS_KEY,
+		AWS_SECRET_KEY: process.env.AWS_KMS_SECRET_KEY,
+		AWS_REGION: process.env.AWS_REGION,
+	});
 
 // Add error handler
 app.onError((err, c) => {
 	console.error(`[Hedera API Error] ${err.message}`, err.stack);
-	return c.json({
-		error: "Internal Server Error",
-		message: err.message,
-	}, 500);
+	return c.json(
+		{
+			error: "Internal Server Error",
+			message: err.message,
+		},
+		500,
+	);
 });
 
 // Health check endpoint

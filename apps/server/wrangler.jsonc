@@ -8,6 +8,7 @@
 	],
 	"vars": {
 		"MY_VAR": "my-variable",
+		"NEXT_PUBLIC_API_URL": "https://hvault.lilbrown3000.workers.dev",
 		"AWS_REGION": "us-east-1",
 		"HEDERA_NETWORK": "testnet"
 	},
