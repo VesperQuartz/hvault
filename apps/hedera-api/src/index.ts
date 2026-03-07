@@ -1,4 +1,3 @@
-import { serve } from "@hono/node-server";
 import { sValidator } from "@hono/standard-validator";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -134,12 +133,7 @@ app.post(
 	},
 );
 
-serve(
-	{
-		fetch: app.fetch,
-		port: Number(process.env.PORT) || 8000,
-	},
-	(info) => {
-		console.log(`Hedera API is running on http://localhost:${info.port}`);
-	},
-);
+export default {
+	fetch: app.fetch,
+	port: Number(process.env.PORT) || 8000,
+};
