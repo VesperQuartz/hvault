@@ -1,17 +1,13 @@
-"use client";
-
-import { Button } from "@hvault/ui/components/button";
-import { FileText, History, LogOut, Shield, Upload } from "lucide-react";
+import { Shield } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
+import { FileText, History, Upload } from "lucide-react";
+import { SignOutButton } from "@/components/sign-out-button";
 
 export default function DashboardLayout({
 	children,
 }: {
 	children: React.ReactNode;
 }) {
-	const router = useRouter();
 	return (
 		<div className="min-h-screen">
 			{/* Header */}
@@ -25,26 +21,7 @@ export default function DashboardLayout({
 							</h1>
 						</div>
 						<div className="flex items-center space-x-4">
-							<Button
-								variant="ghost"
-								size="sm"
-								onClick={() => {
-									authClient.signOut(
-										{},
-										{
-											onSuccess: () => {
-												router.push("/login");
-											},
-											onError: () => {
-												console.error("Sign out failed");
-											},
-										},
-									);
-								}}
-							>
-								<LogOut className="h-4 w-4 mr-2" />
-								Sign out
-							</Button>
+							<SignOutButton />
 						</div>
 					</div>
 				</div>

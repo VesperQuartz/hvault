@@ -121,6 +121,8 @@ app.use("*", async (ctx, next) => {
 	return next();
 });
 
+app.get("/test", (c) => c.json({ message: "API is working", basePath: "/api" }));
+
 // Mount application routes AFTER session middleware
 app.route("/records", recordsRoutes);
 app.route("/share", shareRoutes);

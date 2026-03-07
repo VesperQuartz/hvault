@@ -1,191 +1,66 @@
-"use client";
+import { cacheLife, cacheTag } from "next/cache";
+import { headers } from "next/headers";
+import { Suspense } from "react";
+import AuditClient from "./audit-client";
 
-import { useQuery } from "@tanstack/react-query";
-import { recordsApi, queryKeys, formatHederaTxId } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@hvault/ui/components/card";
-import { Badge } from "@hvault/ui/components/badge";
-import { Shield, ExternalLink, Clock, ArrowLeft, Share2, Trash2, CheckCircle2, AlertTriangle, Download, Upload, Monitor, Smartphone, Globe } from "lucide-react";
-import { formatDistanceToNow, isValid } from "date-fns";
-import Link from "next/link";
-import { Button } from "@hvault/ui/components/button";
+interface AuditLog {
+	id: string;
+	userId: string;
+	recordId: string | null;
+	action: string;
+	hederaTopicId: string;
+	hederaTransactionId: string;
+	hederaSequenceNumber: string;
+	metadata: string | null;
+	timestamp: number;
+}
+
+async function getAuditLogs(cookie: string) {
+	"use cache";
+	cacheLife("minutes");
+	cacheTag("audit");
+
+	const API_BASE_URL =
+		process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787/api";
+	const API_BASE_URL_FORMATTED = API_BASE_URL.endsWith("/api")
+		? API_BASE_URL
+		: `${API_BASE_URL}/api`;
+
+	console.log(`[Next.js Server] Fetching audit logs from: ${API_BASE_URL_FORMATTED}/records/audit`);
+
+	try {
+		const res = await fetch(`${API_BASE_URL_FORMATTED}/records/audit`, {
+			headers: {
+				cookie: cookie || "",
+			},
+		});
+
+		if (!res.ok) {
+			console.error(`Failed to fetch audit logs: ${res.status}`);
+			return [];
+		}
+
+		const data = await res.json();
+		return (data.logs as AuditLog[]) || [];
+	} catch (error) {
+		console.error("Error fetching audit logs on server:", error);
+		return [];
+	}
+}
+
+async function AuditContent() {
+	const cookie = (await headers()).get("cookie") || "";
+	const logs = await getAuditLogs(cookie);
+
+	return <AuditClient initialLogs={logs} />;
+}
 
 export default function AuditHistoryPage() {
-	const { data, isLoading, error } = useQuery({
-		queryKey: queryKeys.records.audit(),
-		queryFn: () => recordsApi.listAudit(),
-	});
-
-	const logs = (data?.logs ?? []) as any[];
-
-	const getActionIcon = (action: string) => {
-		switch (action) {
-			case "UPLOAD": return <Upload className="h-4 w-4 text-blue-600" />;
-			case "ACCESS": return <Download className="h-4 w-4 text-green-600" />;
-			case "SHARE": return <Share2 className="h-4 w-4 text-purple-600" />;
-			case "DELETE": return <Trash2 className="h-4 w-4 text-red-600" />;
-			case "VERIFY": return <CheckCircle2 className="h-4 w-4 text-green-600" />;
-			case "TAMPER_DETECTED": return <AlertTriangle className="h-4 w-4 text-red-600" />;
-			default: return <Shield className="h-4 w-4 text-gray-600" />;
-		}
-	};
-
-	const getActionColor = (action: string) => {
-		switch (action) {
-			case "UPLOAD": return "bg-blue-100 text-blue-700 border-blue-200";
-			case "ACCESS": return "bg-green-100 text-green-700 border-green-200";
-			case "SHARE": return "bg-purple-100 text-purple-700 border-purple-200";
-			case "DELETE": return "bg-red-100 text-red-700 border-red-200";
-			case "VERIFY": return "bg-green-100 text-green-700 border-green-200";
-			case "TAMPER_DETECTED": return "bg-red-100 text-red-700 border-red-200";
-			default: return "bg-gray-100 text-gray-700 border-gray-200";
-		}
-	};
-
-	const formatLogDate = (timestamp: any) => {
-		const date = new Date(timestamp);
-		if (!isValid(date)) return "Unknown date";
-		return `${date.toLocaleString()} (${formatDistanceToNow(date)} ago)`;
-	};
-
-	const getMetadataDisplay = (metadataStr: string | null) => {
-		if (!metadataStr) return "No additional details";
-		try {
-			const meta = JSON.parse(metadataStr);
-			return meta.fileName || meta.action || meta.message || "Action recorded";
-		} catch (e) {
-			return metadataStr;
-		}
-	};
-
-	const formatUserAgent = (ua: string | null) => {
-		if (!ua) return "Unknown Device";
-		if (ua.includes("iPhone") || ua.includes("Android")) return "Mobile Device";
-		if (ua.includes("Macintosh") || ua.includes("Windows") || ua.includes("Linux")) return "Desktop Computer";
-		return "Web Browser";
-	};
-
-	const getDeviceIcon = (ua: string | null) => {
-		if (!ua) return <Globe className="h-3 w-3" />;
-		if (ua.includes("iPhone") || ua.includes("Android")) return <Smartphone className="h-3 w-3" />;
-		return <Monitor className="h-3 w-3" />;
-	};
-
-	if (isLoading) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<div className="text-center">
-					<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-					<p className="mt-4 text-muted-foreground">Loading audit trail...</p>
-				</div>
-			</div>
-		);
-	}
-
 	return (
-		<div className="space-y-6">
-			<div className="flex items-center justify-between">
-				<div>
-					<Link href="/dashboard" className="flex items-center text-sm text-muted-foreground hover:text-primary mb-2">
-						<ArrowLeft className="h-4 w-4 mr-1" />
-						Back to Dashboard
-					</Link>
-					<h1 className="text-3xl font-bold tracking-tight">Audit History</h1>
-					<p className="text-muted-foreground">
-						Immutable record of all actions on your medical records, secured by Hedera Hashgraph.
-					</p>
-				</div>
-			</div>
-
-			{error && (
-				<Card className="border-red-200 bg-red-50">
-					<CardContent className="p-4 text-red-700">
-						Failed to load audit history. {error instanceof Error ? error.message : ""}
-					</CardContent>
-				</Card>
-			)}
-
-			<Card>
-				<CardHeader>
-					<CardTitle className="text-lg flex items-center gap-2">
-						<Shield className="h-5 w-5 text-primary" />
-						Blockchain Audit Trail
-					</CardTitle>
-					<CardDescription>
-						Every action is permanently stamped on the Hedera blockchain.
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					{logs.length === 0 ? (
-						<div className="text-center py-12">
-							<p className="text-muted-foreground">No audit logs found yet.</p>
-						</div>
-					) : (
-						<div className="relative space-y-4">
-							{logs.map((log, index) => (
-								<div key={log.id} className="relative pl-8 pb-4 last:pb-0">
-									{/* Timeline line */}
-									{index !== logs.length - 1 && (
-										<div className="absolute left-[15px] top-8 bottom-0 w-[2px] bg-gray-100" />
-									)}
-									
-									{/* Status Circle */}
-									<div className={`absolute left-0 top-1 p-1.5 rounded-full border-2 bg-white z-10 ${getActionColor(log.action)}`}>
-										{getActionIcon(log.action)}
-									</div>
-
-									<div className="bg-white border rounded-xl p-4 hover:shadow-md transition-shadow">
-										<div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-											<div className="space-y-1 flex-1">
-												<div className="flex items-center gap-2">
-													<span className="font-bold text-gray-900">{log.action}</span>
-													<Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${getActionColor(log.action)}`}>
-														Verified
-													</Badge>
-												</div>
-												<div className="text-sm text-muted-foreground flex items-center gap-1.5">
-													<Clock className="h-3 w-3" />
-													{formatLogDate(log.timestamp)}
-												</div>
-												
-												{/* Connection Metadata */}
-												<div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-[11px] text-muted-foreground bg-gray-50/50 p-2 rounded-lg border border-gray-100">
-													<div className="flex items-center gap-1.5">
-														<Globe className="h-3 w-3 text-gray-400" />
-														<span>IP: {log.ipAddress || "Unknown"}</span>
-													</div>
-													<div className="flex items-center gap-1.5">
-														{getDeviceIcon(log.userAgent)}
-														<span>{formatUserAgent(log.userAgent)}</span>
-													</div>
-												</div>
-
-												<p className="text-xs text-muted-foreground mt-2 bg-gray-50 p-2 rounded border border-dashed">
-													{getMetadataDisplay(log.metadata)}
-												</p>
-											</div>
-
-											<div className="flex flex-col items-start md:items-end gap-2 shrink-0">
-												<div className="text-[10px] text-muted-foreground font-mono">
-													Sequence: #{log.hederaSequenceNumber}
-												</div>
-												<a 
-													href={`https://hashscan.io/testnet/transaction/${formatHederaTxId(log.hederaTransactionId)}`}
-													target="_blank"
-													rel="noopener noreferrer"
-													className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium"
-												>
-													<ExternalLink className="h-3 w-3" />
-													Blockchain Proof
-												</a>
-											</div>
-										</div>
-									</div>
-								</div>
-							))}
-						</div>
-					)}
-				</CardContent>
-			</Card>
-		</div>
+		<Suspense
+			fallback={<div className="animate-pulse h-96 bg-gray-100 rounded-xl" />}
+		>
+			<AuditContent />
+		</Suspense>
 	);
 }

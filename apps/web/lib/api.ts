@@ -5,7 +5,11 @@ import ky from "ky";
  * ky handles credentials, retries, and error handling automatically
  */
 
-const API_BASE_URL = "http://localhost:8787/api";
+const rawApiUrl =
+	process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787/api";
+const API_BASE_URL = rawApiUrl.endsWith("/api")
+	? rawApiUrl
+	: `${rawApiUrl}/api`;
 
 // Base ky instance with shared config
 export const api = ky.create({

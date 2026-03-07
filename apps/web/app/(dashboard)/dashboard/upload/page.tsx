@@ -29,6 +29,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { recordsApi } from "@/lib/api";
+import { revalidateAudit, revalidateRecords } from "@/app/actions";
 
 const DOCUMENT_TYPES = [
 	{ value: "lab_result", label: "Lab Result" },
@@ -102,6 +103,11 @@ export default function UploadPage() {
 				if (value.notes) formData.append("notes", value.notes);
 
 				const res = await recordsApi.upload(file, formData);
+				
+				// Revalidate records and audit cache
+				await revalidateRecords();
+				await revalidateAudit();
+
 				clearInterval(timer);
 				setProgress(100);
 				setUploaded({
