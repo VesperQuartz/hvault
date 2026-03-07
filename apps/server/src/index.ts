@@ -94,6 +94,8 @@ app.use(async (c, next) => {
 	await next();
 });
 
+app.get("/", (c) => c.json({ message: "API is working", basePath: "/api" }));
+
 app.on(["GET", "POST"], "/auth/*", (c) => auth(c.env).handler(c.req.raw));
 
 // Session middleware MUST come before routes
@@ -121,7 +123,9 @@ app.use("*", async (ctx, next) => {
 	return next();
 });
 
-app.get("/test", (c) => c.json({ message: "API is working", basePath: "/api" }));
+app.get("/test", (c) =>
+	c.json({ message: "API is working", basePath: "/api" }),
+);
 
 // Mount application routes AFTER session middleware
 app.route("/records", recordsRoutes);
