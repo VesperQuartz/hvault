@@ -1,19 +1,18 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { formatHederaTxId, queryKeys, recordsApi } from "@/lib/api";
 import { Alert, AlertDescription } from "@hvault/ui/components/alert";
 import { Badge } from "@hvault/ui/components/badge";
 import { Button } from "@hvault/ui/components/button";
 import { Card, CardContent } from "@hvault/ui/components/card";
 import { Input } from "@hvault/ui/components/input";
-import { 
-	Select, 
-	SelectContent, 
-	SelectItem, 
-	SelectTrigger, 
-	SelectValue 
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
 } from "@hvault/ui/components/select";
+import { cn } from "@hvault/ui/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -22,20 +21,21 @@ import {
 	Download,
 	ExternalLink,
 	FileText,
+	Filter,
 	Lock,
 	Plus,
+	Search,
 	Share2,
 	Shield,
 	Trash2,
-	Upload,
-	Search,
-	Filter,
-	X
+	X,
 } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@hvault/ui/lib/utils";
+import { useMemo, useState } from "react";
 import DeleteDialog from "@/components/delete-dialog";
 import ShareDialog from "@/components/share-dialog";
+import ManageLinksDialog from "@/components/manage-links-dialog";
+import { formatHederaTxId, queryKeys, recordsApi } from "@/lib/api";
 
 interface Record {
 	id: string;
@@ -51,6 +51,7 @@ interface Record {
 	doctorName?: string;
 	hospitalName?: string;
 	notes?: string;
+	shareLinkCount?: number;
 }
 
 const DOCUMENT_TYPES = [
@@ -63,12 +64,17 @@ const DOCUMENT_TYPES = [
 	{ value: "other", label: "Other" },
 ];
 
-export default function DashboardClient({ initialRecords }: { initialRecords: Record[] }) {
+export default function DashboardClient({
+	initialRecords,
+}: {
+	initialRecords: Record[];
+}) {
 	const queryClient = useQueryClient();
 	const [shareDialogOpen, setShareDialogOpen] = useState(false);
+	const [manageLinksDialogOpen, setManageLinksDialogOpen] = useState(false);
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [selectedRecord, setSelectedRecord] = useState<Record | null>(null);
-	
+
 	// Filter and Search state
 	const [searchQuery, setSearchQuery] = useState("");
 	const [typeFilter, setTypeFilter] = useState("all");
@@ -80,15 +86,20 @@ export default function DashboardClient({ initialRecords }: { initialRecords: Re
 		initialData: { success: true, records: initialRecords },
 	});
 
-	const allRecords = data?.records ?? [];
+	const allRecords = useMemo(() => {
+		const records = (data?.records as Record[]) ?? [];
+		console.log("[DashboardClient] Records in client:", records.map(r => `${r.fileName}: ${r.shareLinkCount}`));
+		return records;
+	}, [data.records]);
 
 	// Filtered records
 	const filteredRecords = useMemo(() => {
-		return allRecords.filter(record => {
+		return allRecords.filter((record) => {
 			const matchesSearch = (record.title || record.fileName)
 				.toLowerCase()
 				.includes(searchQuery.toLowerCase());
-			const matchesType = typeFilter === "all" || record.documentType === typeFilter;
+			const matchesType =
+				typeFilter === "all" || record.documentType === typeFilter;
 			return matchesSearch && matchesType;
 		});
 	}, [allRecords, searchQuery, typeFilter]);
@@ -125,6 +136,11 @@ export default function DashboardClient({ initialRecords }: { initialRecords: Re
 	const handleShare = (record: Record) => {
 		setSelectedRecord(record);
 		setShareDialogOpen(true);
+	};
+
+	const handleManageLinks = (record: Record) => {
+		setSelectedRecord(record);
+		setManageLinksDialogOpen(true);
 	};
 
 	const handleDelete = (record: Record) => {
@@ -175,7 +191,7 @@ export default function DashboardClient({ initialRecords }: { initialRecords: Re
 							Audit History
 						</Button>
 					</Link>
-					<Button 
+					<Button
 						onClick={() => (window.location.href = "/dashboard/upload")}
 						className="shadow-md"
 					>
@@ -191,7 +207,9 @@ export default function DashboardClient({ initialRecords }: { initialRecords: Re
 					<CardContent className="p-6">
 						<div className="flex items-center justify-between">
 							<div>
-								<p className="text-sm font-medium text-muted-foreground mb-1">Total Records</p>
+								<p className="text-sm font-medium text-muted-foreground mb-1">
+									Total Records
+								</p>
 								<p className="text-3xl font-bold">{allRecords.length}</p>
 							</div>
 							<div className="bg-blue-100 p-3 rounded-xl">
@@ -205,7 +223,9 @@ export default function DashboardClient({ initialRecords }: { initialRecords: Re
 					<CardContent className="p-6">
 						<div className="flex items-center justify-between">
 							<div>
-								<p className="text-sm font-medium text-muted-foreground mb-1">Security Status</p>
+								<p className="text-sm font-medium text-muted-foreground mb-1">
+									Security Status
+								</p>
 								<p className="text-xl font-bold text-green-600">All Verified</p>
 							</div>
 							<div className="bg-green-100 p-3 rounded-xl">
@@ -219,8 +239,12 @@ export default function DashboardClient({ initialRecords }: { initialRecords: Re
 					<CardContent className="p-6">
 						<div className="flex items-center justify-between">
 							<div>
-								<p className="text-sm font-medium text-muted-foreground mb-1">Blockchain Network</p>
-								<p className="text-xl font-bold text-purple-600">Hedera Testnet</p>
+								<p className="text-sm font-medium text-muted-foreground mb-1">
+									Blockchain Network
+								</p>
+								<p className="text-xl font-bold text-purple-600">
+									Hedera Testnet
+								</p>
 							</div>
 							<div className="bg-purple-100 p-3 rounded-xl">
 								<Shield className="h-6 w-6 text-purple-600" />
@@ -249,7 +273,7 @@ export default function DashboardClient({ initialRecords }: { initialRecords: Re
 						onChange={(e) => setSearchQuery(e.target.value)}
 					/>
 					{searchQuery && (
-						<button 
+						<button
 							onClick={() => setSearchQuery("")}
 							className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
 						>
@@ -299,12 +323,19 @@ export default function DashboardClient({ initialRecords }: { initialRecords: Re
 			) : filteredRecords.length === 0 ? (
 				<div className="text-center py-12 bg-gray-50 rounded-2xl border-2 border-dashed">
 					<Search className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-					<h3 className="text-lg font-medium text-gray-900">No matching records</h3>
-					<p className="text-gray-500">Try adjusting your search or filter criteria</p>
-					<Button 
-						variant="link" 
+					<h3 className="text-lg font-medium text-gray-900">
+						No matching records
+					</h3>
+					<p className="text-gray-500">
+						Try adjusting your search or filter criteria
+					</p>
+					<Button
+						variant="link"
 						className="mt-2 text-blue-600"
-						onClick={() => { setSearchQuery(""); setTypeFilter("all"); }}
+						onClick={() => {
+							setSearchQuery("");
+							setTypeFilter("all");
+						}}
 					>
 						Clear all filters
 					</Button>
@@ -324,14 +355,19 @@ export default function DashboardClient({ initialRecords }: { initialRecords: Re
 							<CardContent className="p-0">
 								<div className="flex items-stretch">
 									{/* Color strip based on type */}
-									<div className={cn(
-										"w-1.5",
-										record.documentType === "lab_result" ? "bg-red-500" :
-										record.documentType === "prescription" ? "bg-green-500" :
-										record.documentType === "imaging" ? "bg-purple-500" :
-										"bg-blue-500"
-									)} />
-									
+									<div
+										className={cn(
+											"w-1.5",
+											record.documentType === "lab_result"
+												? "bg-red-500"
+												: record.documentType === "prescription"
+													? "bg-green-500"
+													: record.documentType === "imaging"
+														? "bg-purple-500"
+														: "bg-blue-500",
+										)}
+									/>
+
 									<div className="flex-1 p-6">
 										<div className="flex items-start justify-between gap-4">
 											<div className="flex-1 min-w-0">
@@ -355,7 +391,9 @@ export default function DashboardClient({ initialRecords }: { initialRecords: Re
 															{record.recordDate && (
 																<span className="flex items-center gap-1">
 																	<Clock className="h-3 w-3" />
-																	{new Date(record.recordDate).toLocaleDateString()}
+																	{new Date(
+																		record.recordDate,
+																	).toLocaleDateString()}
 																</span>
 															)}
 															{record.doctorName && (
@@ -365,7 +403,13 @@ export default function DashboardClient({ initialRecords }: { initialRecords: Re
 														<div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-2">
 															<span>{formatFileSize(record.fileSize)}</span>
 															<span>·</span>
-															<span>Uploaded {formatDistanceToNow(new Date(record.uploadedAt))} ago</span>
+															<span>
+																Uploaded{" "}
+																{formatDistanceToNow(
+																	new Date(record.uploadedAt),
+																)}{" "}
+																ago
+															</span>
 															<span>·</span>
 															<Badge
 																variant="outline"
@@ -386,7 +430,9 @@ export default function DashboardClient({ initialRecords }: { initialRecords: Re
 
 												<div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-100 text-[10px]">
 													<div className="flex items-center gap-1.5 text-muted-foreground">
-														<span className="font-medium text-gray-400">FILE HASH:</span>
+														<span className="font-medium text-gray-400">
+															FILE HASH:
+														</span>
 														<code className="bg-gray-50 px-2 py-0.5 rounded border">
 															{record.fileHash.substring(0, 24)}...
 														</code>
@@ -425,6 +471,17 @@ export default function DashboardClient({ initialRecords }: { initialRecords: Re
 													<Share2 className="h-4 w-4 mr-2" />
 													Share Securely
 												</Button>
+												{record.shareLinkCount && record.shareLinkCount > 0 ? (
+													<Button
+														variant="outline"
+														size="sm"
+														onClick={() => handleManageLinks(record)}
+														className="hover:bg-orange-50 hover:text-orange-600 border-gray-200"
+													>
+														<ExternalLink className="h-4 w-4 mr-2" />
+														Manage Links ({record.shareLinkCount})
+													</Button>
+												) : null}
 												<Button
 													variant="outline"
 													size="sm"
@@ -453,6 +510,11 @@ export default function DashboardClient({ initialRecords }: { initialRecords: Re
 					<ShareDialog
 						open={shareDialogOpen}
 						onOpenChange={setShareDialogOpen}
+						record={selectedRecord}
+					/>
+					<ManageLinksDialog
+						open={manageLinksDialogOpen}
+						onOpenChange={setManageLinksDialogOpen}
 						record={selectedRecord}
 					/>
 					<DeleteDialog

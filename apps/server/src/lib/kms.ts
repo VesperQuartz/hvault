@@ -147,17 +147,22 @@ export class KMSService {
  * Factory function to create KMSService from env
  */
 export function createKMSService(env: {
+	AWS_KMS_ACCESS_KEY?: string;
+	AWS_KMS_ACCESS_SECRET?: string;
 	AWS_ACCESS_KEY?: string;
 	AWS_ACCESS_SECRET?: string;
 	AWS_REGION?: string;
 }): KMSService {
-	if (!env.AWS_ACCESS_KEY || !env.AWS_ACCESS_SECRET) {
-		throw new Error("Missing AWS credentials in environment");
+	const accessKeyId = env.AWS_KMS_ACCESS_KEY || env.AWS_ACCESS_KEY;
+	const secretAccessKey = env.AWS_KMS_ACCESS_SECRET || env.AWS_ACCESS_SECRET;
+
+	if (!accessKeyId || !secretAccessKey) {
+		throw new Error("Missing AWS credentials in environment (AWS_KMS_ACCESS_KEY or AWS_ACCESS_KEY)");
 	}
 
 	return new KMSService({
-		accessKeyId: env.AWS_ACCESS_KEY,
-		secretAccessKey: env.AWS_ACCESS_SECRET,
+		accessKeyId,
+		secretAccessKey,
 		region: env.AWS_REGION || "us-east-1",
 	});
 }

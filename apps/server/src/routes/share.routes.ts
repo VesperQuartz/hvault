@@ -24,7 +24,7 @@ shareRoutes.post(
 		"json",
 		z.object({
 			recordId: z.string(),
-			expiresInHours: z.number().min(1).max(168).default(24), // Max 7 days
+			expiresInHours: z.number().min(0.005).max(168).default(24), // Max 7 days
 		}),
 	),
 	async (c) => {
@@ -98,8 +98,8 @@ shareRoutes.post(
 						shareLinkId,
 						expiresInHours,
 					}),
-					ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || null,
-					userAgent: c.req.header("user-agent") || null,
+					ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-real-ip") || c.req.header("x-forwarded-for") || "127.0.0.1",
+					userAgent: c.req.header("user-agent") || c.req.header("User-Agent") || "Unknown",
 				});
 			}
 
@@ -156,6 +156,50 @@ shareRoutes.get("/:token/info", async (c) => {
 		// Check expiry
 		const now = new Date();
 		if (shareLink.expiresAt < now) {
+			// Log expired access attempt
+			const userKey = await db
+				.select()
+				.from(userKeys)
+				.where(eq(userKeys.userId, shareLink.userId))
+				.get();
+
+			if (userKey) {
+				const hederaService = createHederaService(c.env);
+				try {
+					const auditResult = await hederaService.submitRecordAudit(
+						userKey.hederaTopicId,
+						"EXPIRED_ACCESS",
+						shareLink.userId,
+						shareLink.recordId,
+						{
+							shareLinkId: shareLink.id,
+							expiredAt: shareLink.expiresAt.toISOString(),
+							attemptedAt: now.toISOString(),
+						},
+					);
+
+					await db.insert(auditLogs).values({
+						id: crypto.randomUUID(),
+						userId: shareLink.userId,
+						recordId: shareLink.recordId,
+						action: "EXPIRED_ACCESS",
+						hederaTopicId: userKey.hederaTopicId,
+						hederaTransactionId: auditResult.transactionId,
+						hederaSequenceNumber: auditResult.sequenceNumber,
+						metadata: JSON.stringify({
+							shareLinkId: shareLink.id,
+							expiredAt: shareLink.expiresAt,
+						}),
+						ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-real-ip") || c.req.header("x-forwarded-for") || "127.0.0.1",
+						userAgent: c.req.header("user-agent") || c.req.header("User-Agent") || "Unknown",
+					});
+				} catch (e) {
+					console.error("Failed to log expired access to Hedera:", e);
+				} finally {
+					hederaService.close();
+				}
+			}
+
 			return c.json({ error: "Share link has expired" }, 410);
 		}
 
@@ -221,6 +265,50 @@ shareRoutes.get("/:token", async (c) => {
 		// Check expiry
 		const now = new Date();
 		if (shareLink.expiresAt < now) {
+			// Log expired access attempt
+			const userKey = await db
+				.select()
+				.from(userKeys)
+				.where(eq(userKeys.userId, shareLink.userId))
+				.get();
+
+			if (userKey) {
+				const hederaService = createHederaService(c.env);
+				try {
+					const auditResult = await hederaService.submitRecordAudit(
+						userKey.hederaTopicId,
+						"EXPIRED_ACCESS",
+						shareLink.userId,
+						shareLink.recordId,
+						{
+							shareLinkId: shareLink.id,
+							expiredAt: shareLink.expiresAt.toISOString(),
+							attemptedAt: now.toISOString(),
+						},
+					);
+
+					await db.insert(auditLogs).values({
+						id: crypto.randomUUID(),
+						userId: shareLink.userId,
+						recordId: shareLink.recordId,
+						action: "EXPIRED_ACCESS",
+						hederaTopicId: userKey.hederaTopicId,
+						hederaTransactionId: auditResult.transactionId,
+						hederaSequenceNumber: auditResult.sequenceNumber,
+						metadata: JSON.stringify({
+							shareLinkId: shareLink.id,
+							expiredAt: shareLink.expiresAt,
+						}),
+						ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-real-ip") || c.req.header("x-forwarded-for") || "127.0.0.1",
+						userAgent: c.req.header("user-agent") || c.req.header("User-Agent") || "Unknown",
+					});
+				} catch (e) {
+					console.error("Failed to log expired access to Hedera:", e);
+				} finally {
+					hederaService.close();
+				}
+			}
+
 			return c.json({ error: "Share link has expired" }, 410);
 		}
 
@@ -306,8 +394,8 @@ shareRoutes.get("/:token", async (c) => {
 						shareLinkId: shareLink.id,
 						fileName: record.fileName,
 					}),
-					ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || null,
-					userAgent: c.req.header("user-agent") || null,
+					ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-real-ip") || c.req.header("x-forwarded-for") || "127.0.0.1",
+					userAgent: c.req.header("user-agent") || c.req.header("User-Agent") || "Unknown",
 				});
 
 				hederaService.close();
@@ -358,8 +446,8 @@ shareRoutes.get("/:token", async (c) => {
 					verified: true,
 					shareLinkId: shareLink.id,
 				}),
-				ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || null,
-				userAgent: c.req.header("user-agent") || null,
+				ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-real-ip") || c.req.header("x-forwarded-for") || "127.0.0.1",
+				userAgent: c.req.header("user-agent") || c.req.header("User-Agent") || "Unknown",
 			});
 
 			hederaService.close();

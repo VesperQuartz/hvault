@@ -14,6 +14,9 @@ import { pinoLogger } from "hono-pino";
 import pino from "pino";
 import z from "zod";
 import { auth } from "#/src/lib/auth";
+import { createHederaService } from "#/src/lib/hedera";
+import { auditLogs, shareLinks, userKeys } from "./repo/schema";
+import { lt, and, eq } from "drizzle-orm";
 import { type CFBindings, type Env, factory } from "./factory";
 import recordsRoutes from "./routes/records.routes";
 import shareRoutes from "./routes/share.routes";
@@ -56,7 +59,6 @@ app.use(
 				return origin;
 			}
 
-			// Allow specific origins
 			if (allowedOrigins.includes(origin)) {
 				return origin;
 			}
@@ -225,12 +227,95 @@ const routes = app
 export default {
 	// @ts-expect-error - Cloudflare Workers types are not up to date
 	fetch: app.fetch,
-	scheduled: async (batch, env) => {
-		Match.value(batch.cron).pipe(
-			Match.when("* * * * *", () => {
-				console.log(batch, env, "Hello from cronx");
-			}),
-			Match.orElse(() => console.log("Not a cron job")),
-		);
+	scheduled: async (batch, env: CFBindings) => {
+		const db = drizzle(env.DB);
+		const now = new Date();
+
+		console.log(`[Cron] Running link expiry check at ${now.toISOString()}...`);
+
+		try {
+			// 1. Find all links that just expired but aren't marked yet
+			const expiredLinks = await db
+				.select({
+					id: shareLinks.id,
+					userId: shareLinks.userId,
+					recordId: shareLinks.recordId,
+					expiresAt: shareLinks.expiresAt,
+				})
+				.from(shareLinks)
+				.where(
+					and(
+						lt(shareLinks.expiresAt, now),
+						eq(shareLinks.isExpired, false)
+					)
+				)
+				.all();
+
+			if (expiredLinks.length === 0) {
+				console.log("[Cron] No newly expired links to process.");
+				return;
+			}
+
+			console.log(`[Cron] Found ${expiredLinks.length} expired links to process.`);
+
+			const hService = createHederaService(env);
+
+			for (const link of expiredLinks) {
+				try {
+					// Get user's Hedera topic
+					const userKey = await db
+						.select()
+						.from(userKeys)
+						.where(eq(userKeys.userId, link.userId))
+						.get();
+
+					if (userKey) {
+						// Log to Hedera
+						const hResult = await hService.submitRecordAudit(
+							userKey.hederaTopicId,
+							"LINK_EXPIRED",
+							link.userId,
+							link.recordId,
+							{
+								shareLinkId: link.id,
+								expiredAt: link.expiresAt.toISOString(),
+								reason: "Automatic background expiry"
+							}
+						);
+
+						// Log to local audit database
+						await db.insert(auditLogs).values({
+							id: crypto.randomUUID(),
+							userId: link.userId,
+							recordId: link.recordId,
+							action: "LINK_EXPIRED",
+							hederaTopicId: userKey.hederaTopicId,
+							hederaTransactionId: hResult.transactionId,
+							hederaSequenceNumber: hResult.sequenceNumber,
+							metadata: JSON.stringify({ 
+								shareLinkId: link.id, 
+								expiredAt: link.expiresAt,
+								auto: true 
+							}),
+							ipAddress: "127.0.0.1",
+							userAgent: "Cloudflare Cron Task",
+						});
+					}
+
+					// Mark link as expired in DB
+					await db.update(shareLinks)
+						.set({ isExpired: true })
+						.where(eq(shareLinks.id, link.id));
+
+					console.log(`[Cron] Successfully marked link ${link.id} as expired.`);
+				} catch (err) {
+					console.error(`[Cron] Failed to process expired link ${link.id}:`, err);
+				}
+			}
+
+			hService.close();
+		} catch (error) {
+			console.error("[Cron] Error during expiry check:", error);
+		}
 	},
 } satisfies ExportedHandler<CFBindings>;

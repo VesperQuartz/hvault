@@ -74,6 +74,7 @@ export const shareLinks = sqliteTable(
     
     // Expiry
     expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    isExpired: integer("is_expired", { mode: "boolean" }).default(false).notNull(),
     
     // Access tracking
     accessedAt: integer("accessed_at", { mode: "timestamp_ms" }),

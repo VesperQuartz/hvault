@@ -24,16 +24,17 @@ export default function LoginPage() {
 		onSubmit: async ({ value }) => {
 			setError("");
 			
-			try {
-				await signIn.email({
-					email: value.email,
-					password: value.password,
-				});
-				
-				router.push("/dashboard");
-			} catch (err) {
-				setError(err instanceof Error ? err.message : "Failed to sign in");
-			}
+			await signIn.email({
+				email: value.email,
+				password: value.password,
+			}, {
+				onSuccess: () => {
+					router.push("/dashboard");
+				},
+				onError: (ctx) => {
+					setError(ctx.error.message || "Failed to sign in. Please check your credentials.");
+				}
+			});
 		},
 	});
 

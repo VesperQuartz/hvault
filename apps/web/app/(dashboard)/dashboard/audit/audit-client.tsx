@@ -17,6 +17,7 @@ export default function AuditClient({ initialLogs }: { initialLogs: any[] }) {
 	});
 
 	const logs = (data?.logs ?? []) as any[];
+	console.log("[AuditClient] Received logs:", logs.length > 0 ? logs[0] : "None");
 
 	const getActionIcon = (action: string) => {
 		switch (action) {
@@ -26,6 +27,8 @@ export default function AuditClient({ initialLogs }: { initialLogs: any[] }) {
 			case "DELETE": return <Trash2 className="h-4 w-4 text-red-600" />;
 			case "VERIFY": return <CheckCircle2 className="h-4 w-4 text-green-600" />;
 			case "TAMPER_DETECTED": return <AlertTriangle className="h-4 w-4 text-red-600" />;
+			case "EXPIRED_ACCESS": return <Clock className="h-4 w-4 text-orange-600" />;
+			case "LINK_EXPIRED": return <Clock className="h-4 w-4 text-orange-400" />;
 			default: return <Shield className="h-4 w-4 text-gray-600" />;
 		}
 	};
@@ -38,6 +41,8 @@ export default function AuditClient({ initialLogs }: { initialLogs: any[] }) {
 			case "DELETE": return "bg-red-100 text-red-700 border-red-200";
 			case "VERIFY": return "bg-green-100 text-green-700 border-green-200";
 			case "TAMPER_DETECTED": return "bg-red-100 text-red-700 border-red-200";
+			case "EXPIRED_ACCESS": return "bg-orange-100 text-orange-700 border-orange-200";
+			case "LINK_EXPIRED": return "bg-orange-50 text-orange-600 border-orange-100";
 			default: return "bg-gray-100 text-gray-700 border-gray-200";
 		}
 	};

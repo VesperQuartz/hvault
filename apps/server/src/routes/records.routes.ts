@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql, count } from "drizzle-orm";
 import { z } from "zod";
 import { factory } from "../factory";
 import {
@@ -11,7 +11,7 @@ import {
 } from "../lib/hash";
 import { createHederaService } from "../lib/hedera";
 import { createKMSService } from "../lib/kms";
-import { auditLogs, records, userKeys } from "../repo/schema";
+import { auditLogs, records, shareLinks, userKeys } from "../repo/schema";
 
 const recordsRoutes = factory.createApp();
 
@@ -192,9 +192,8 @@ recordsRoutes.post(
 				hederaTransactionId: auditResult.transactionId,
 				hederaSequenceNumber: auditResult.sequenceNumber,
 				metadata: JSON.stringify({ fileName: file.name, fileSize: file.size }),
-				ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || null,
-				userAgent: c.req.header("user-agent") || null,
-			});
+				ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-real-ip") || c.req.header("x-forwarded-for") || "127.0.0.1",
+				userAgent: c.req.header("user-agent") || c.req.header("User-Agent") || "Unknown",			});
 
 			hederaService.close();
 
@@ -244,10 +243,15 @@ recordsRoutes.get("/", async (c) => {
 				fileHash: records.fileHash,
 				uploadedAt: records.uploadedAt,
 				hederaTransactionId: records.hederaTransactionId,
+				shareLinkCount: count(shareLinks.id),
 			})
 			.from(records)
+			.leftJoin(shareLinks, eq(shareLinks.recordId, records.id))
 			.where(eq(records.userId, user.id))
+			.groupBy(records.id)
 			.orderBy(desc(records.uploadedAt));
+
+		console.log(`[Backend] Returning ${userRecords.length} records for user ${user.id}`);
 
 		return c.json({
 			success: true,
@@ -277,6 +281,8 @@ recordsRoutes.get("/audit", async (c) => {
 			.from(auditLogs)
 			.where(eq(auditLogs.userId, user.id))
 			.orderBy(desc(auditLogs.timestamp));
+
+		console.log(`[Backend] Returning ${logs.length} audit logs. First log fields:`, Object.keys(logs[0] || {}));
 
 		return c.json({
 			success: true,
@@ -413,9 +419,8 @@ recordsRoutes.get("/:id/download", async (c) => {
 				hederaTransactionId: auditResult.transactionId,
 				hederaSequenceNumber: auditResult.sequenceNumber,
 				metadata: JSON.stringify({ action: "download" }),
-				ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || null,
-				userAgent: c.req.header("user-agent") || null,
-			});
+				ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-real-ip") || c.req.header("x-forwarded-for") || "127.0.0.1",
+				userAgent: c.req.header("user-agent") || c.req.header("User-Agent") || "Unknown",			});
 
 			hederaService.close();
 		}
@@ -496,9 +501,8 @@ recordsRoutes.delete("/:id", async (c) => {
 				hederaTransactionId: auditResult.transactionId,
 				hederaSequenceNumber: auditResult.sequenceNumber,
 				metadata: JSON.stringify({ fileName: record.fileName }),
-				ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for") || null,
-				userAgent: c.req.header("user-agent") || null,
-			});
+				ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-real-ip") || c.req.header("x-forwarded-for") || "127.0.0.1",
+				userAgent: c.req.header("user-agent") || c.req.header("User-Agent") || "Unknown",			});
 
 			hederaService.close();
 		}

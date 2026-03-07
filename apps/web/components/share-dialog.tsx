@@ -1,7 +1,6 @@
 "use client";
 
 import { Alert, AlertDescription } from "@hvault/ui/components/alert";
-import { Badge } from "@hvault/ui/components/badge";
 import { Button } from "@hvault/ui/components/button";
 import {
 	Dialog,
@@ -20,23 +19,19 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@hvault/ui/components/select";
-import { Separator } from "@hvault/ui/components/separator";
 import { useForm } from "@tanstack/react-form";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { formatDistanceToNow } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
 import {
 	Check,
-	Clock,
 	Copy,
 	Download,
 	ExternalLink,
-	History,
 	QrCode,
-	Trash2,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useState } from "react";
 import { queryKeys, shareApi } from "@/lib/api";
+import { revalidateRecords } from "@/app/actions";
 
 interface ShareDialogProps {
 	open: boolean;
@@ -60,26 +55,6 @@ export default function ShareDialog({
 	} | null>(null);
 	const [copied, setCopied] = useState(false);
 	const [showQR, setShowQR] = useState(false);
-	const [viewActiveLinks, setViewActiveLinks] = useState(false);
-
-	// Fetch existing share links
-	const { data: activeLinksData, isLoading: isLoadingLinks } = useQuery({
-		queryKey: queryKeys.shares.forRecord(record.id),
-		queryFn: () => shareApi.listForRecord(record.id),
-		enabled: open,
-	});
-
-	const activeLinks = activeLinksData?.shareLinks ?? [];
-
-	// Revoke mutation
-	const revokeMutation = useMutation({
-		mutationFn: (id: string) => shareApi.revokeLink(id),
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: queryKeys.shares.forRecord(record.id),
-			});
-		},
-	});
 
 	const form = useForm({
 		defaultValues: {
@@ -91,16 +66,22 @@ export default function ShareDialog({
 			try {
 				const response = await shareApi.generateLink(
 					record.id,
-					parseInt(value.expiresInHours),
+					parseFloat(value.expiresInHours),
 				);
 				setShareLink({
 					url: response.shareLink.url,
 					expiresAt: response.shareLink.expiresAt,
 				});
+
+				// Revalidate server-side cache
+				await revalidateRecords();
+
 				// Refresh active links
 				queryClient.invalidateQueries({
 					queryKey: queryKeys.shares.forRecord(record.id),
 				});
+				// Also invalidate records to update the count if we add it later
+				queryClient.invalidateQueries({ queryKey: queryKeys.records.list() });
 			} catch (err) {
 				setError(
 					err instanceof Error ? err.message : "Failed to generate share link",
@@ -148,7 +129,6 @@ export default function ShareDialog({
 		form.reset();
 		setCopied(false);
 		setShowQR(false);
-		setViewActiveLinks(false);
 		onOpenChange(false);
 	};
 
@@ -156,25 +136,11 @@ export default function ShareDialog({
 		<Dialog open={open} onOpenChange={handleClose}>
 			<DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
-					<div className="flex items-center justify-between">
-						<div>
-							<DialogTitle>Share Medical Record</DialogTitle>
-							<DialogDescription className="mt-1.5">
-								{record.fileName}
-							</DialogDescription>
-						</div>
-						{activeLinks.length > 0 && !shareLink && (
-							<Button
-								variant="ghost"
-								size="sm"
-								className="text-xs h-8"
-								onClick={() => setViewActiveLinks(!viewActiveLinks)}
-							>
-								{viewActiveLinks
-									? "Back to Share"
-									: `Manage Links (${activeLinks.length})`}
-							</Button>
-						)}
+					<div>
+						<DialogTitle>Share Medical Record</DialogTitle>
+						<DialogDescription className="mt-1.5">
+							{record.fileName}
+						</DialogDescription>
 					</div>
 				</DialogHeader>
 
@@ -184,75 +150,7 @@ export default function ShareDialog({
 					</Alert>
 				)}
 
-				{viewActiveLinks ? (
-					<div className="space-y-4">
-						<div className="text-sm font-medium flex items-center gap-2">
-							<History className="h-4 w-4" />
-							Active & Recent Share Links
-						</div>
-
-						<div className="space-y-3">
-							{activeLinks.map((link) => (
-								<div
-									key={link.id}
-									className="bg-gray-50 border rounded-lg p-3 space-y-2"
-								>
-									<div className="flex items-center justify-between">
-										<Badge
-											variant={link.isExpired ? "secondary" : "outline"}
-											className="text-[10px]"
-										>
-											{link.isExpired ? "Expired" : "Active"}
-										</Badge>
-										<div className="flex items-center gap-1.5">
-											<Button
-												variant="ghost"
-												size="icon"
-												className="h-7 w-7 text-gray-500"
-												onClick={() => handleCopy(link.url)}
-											>
-												{copied ? (
-													<Check className="h-3.5 w-3.5 text-green-600" />
-												) : (
-													<Copy className="h-3.5 w-3.5" />
-												)}
-											</Button>
-											<Button
-												variant="ghost"
-												size="icon"
-												className="h-7 w-7 text-red-500 hover:bg-red-50 hover:text-red-600"
-												disabled={revokeMutation.isPending}
-												onClick={() => revokeMutation.mutate(link.id)}
-											>
-												<Trash2 className="h-3.5 w-3.5" />
-											</Button>
-										</div>
-									</div>
-									<div className="text-xs space-y-1">
-										<div className="flex items-center gap-1.5 text-muted-foreground">
-											<Clock className="h-3 w-3" />
-											<span>
-												Expires: {new Date(link.expiresAt).toLocaleString()}
-											</span>
-										</div>
-										<div className="flex items-center gap-1.5 text-muted-foreground">
-											<Check className="h-3 w-3" />
-											<span>Accessed: {link.accessCount} times</span>
-										</div>
-									</div>
-								</div>
-							))}
-						</div>
-
-						<Button
-							variant="outline"
-							className="w-full"
-							onClick={() => setViewActiveLinks(false)}
-						>
-							Back to Share
-						</Button>
-					</div>
-				) : !shareLink ? (
+				{!shareLink ? (
 					<form
 						onSubmit={(e) => {
 							e.preventDefault();
@@ -273,6 +171,7 @@ export default function ShareDialog({
 												<SelectValue />
 											</SelectTrigger>
 											<SelectContent>
+												<SelectItem value="0.0055">20 seconds</SelectItem>
 												<SelectItem value="1">1 hour</SelectItem>
 												<SelectItem value="6">6 hours</SelectItem>
 												<SelectItem value="24">24 hours (1 day)</SelectItem>

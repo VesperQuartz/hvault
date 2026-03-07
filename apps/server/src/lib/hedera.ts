@@ -17,6 +17,8 @@ export const STATE = [
 	"DELETE",
 	"VERIFY",
 	"TAMPER_DETECTED",
+	"EXPIRED_ACCESS",
+	"LINK_EXPIRED",
 	"SAVE",
 	"READ",
 	"UPDATE",

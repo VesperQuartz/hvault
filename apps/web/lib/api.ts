@@ -104,6 +104,7 @@ export const recordsApi = {
 			doctorName?: string;
 			hospitalName?: string;
 			notes?: string;
+			shareLinkCount?: number;
 		}>;
 	}> {
 		return api.get("records").json();

@@ -1,8 +1,9 @@
+import { serve } from "@hono/node-server";
 import { sValidator } from "@hono/standard-validator";
 import { Hono } from "hono";
 import { z } from "zod";
 import "dotenv/config";
-import { createHederaService } from "./src/services/hedera.js";
+import { createHederaService } from "./services/hedera.js";
 
 const app = new Hono().basePath("/api");
 
@@ -13,6 +14,8 @@ export const STATE = [
 	"DELETE",
 	"VERIFY",
 	"TAMPER_DETECTED",
+	"EXPIRED_ACCESS",
+	"LINK_EXPIRED",
 	"SAVE",
 	"READ",
 	"UPDATE",
@@ -30,7 +33,7 @@ const getHederaService = () =>
 		HEDERA_PRIVATE_KEY: process.env.HEDERA_PRIVATE_KEY,
 		AWS_KMS_KEY_ID: process.env.AWS_KMS_KEY_ID ?? "",
 		AWS_ACCESS_KEY: process.env.AWS_KMS_ACCESS_KEY,
-		AWS_SECRET_KEY: process.env.AWS_KMS_SECRET_KEY,
+		AWS_SECRET_KEY: process.env.AWS_KMS_ACCESS_SECRET || process.env.AWS_KMS_SECRET_KEY,
 		AWS_REGION: process.env.AWS_REGION,
 	});
 
@@ -133,7 +136,15 @@ app.post(
 	},
 );
 
-export default {
-	fetch: app.fetch,
-	port: Number(process.env.PORT) || 8000,
-};
+// Only start the server via `serve` if NOT on Vercel
+if (!process.env.VERCEL) {
+	const port = Number(process.env.PORT) || 8000;
+	console.log(`[Hedera API] Local server starting on port ${port}...`);
+	serve({
+		fetch: app.fetch,
+		port,
+	});
+}
+
+// Export for Vercel/Cloudflare/Bun
+export default app;

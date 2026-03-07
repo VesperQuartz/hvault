@@ -13,6 +13,8 @@ export type CFBindings = {
 	// AWS KMS Configuration
 	AWS_ACCESS_KEY: string;
 	AWS_ACCESS_SECRET: string;
+	AWS_KMS_ACCESS_KEY: string;
+	AWS_KMS_ACCESS_SECRET: string;
 	AWS_REGION?: string; // Optional, defaults to us-east-1
 	// Hedera HCS Configuration
 	HEDERA_ACCOUNT_ID: string;
