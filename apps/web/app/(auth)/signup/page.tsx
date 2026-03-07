@@ -44,8 +44,8 @@ export default function SignupPage() {
 					onSuccess: () => {
 						router.push("/dashboard");
 					},
-					onError: (data) => {
-						console.log("Error", data);
+					onError: (ctx) => {
+						setError(ctx.error.message || "Failed to create account. Please try again.");
 					},
 				},
 			);

@@ -12,10 +12,17 @@ export const auth = (env: CFBindings): ReturnType<typeof betterAuth> => {
 	const db = drizzle(env.DB, {
 		schema,
 	});
+	const rawBaseUrl = env.BETTER_AUTH_URL || "http://localhost:8787";
+	const authBaseUrl = rawBaseUrl.endsWith("/api/auth")
+		? rawBaseUrl
+		: rawBaseUrl.endsWith("/api")
+			? `${rawBaseUrl}/auth`
+			: `${rawBaseUrl}/api/auth`;
+
 	//@ts-expect-error - Cloudflare Workers types are not up to date
 	return betterAuth({
 		database: drizzleAdapter(db, { provider: "sqlite", schema }),
-		baseURL: env.BETTER_AUTH_URL,
+		baseURL: authBaseUrl,
 		trustedOrigins: [
 			"http://localhost:3000",
 			"http://localhost:*",

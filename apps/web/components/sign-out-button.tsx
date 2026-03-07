@@ -17,6 +17,7 @@ export function SignOutButton() {
 					},
 					onError: (ctx) => {
 						console.error("Sign out failed:", ctx.error);
+						router.push("/login");
 					},
 				},
 			});
