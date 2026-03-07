@@ -8,7 +8,7 @@ import { revalidateTag } from "next/cache";
  */
 export async function revalidateRecords() {
 	console.log("[Server Action] Revalidating 'records' tag...");
-	revalidateTag("records");
+	revalidateTag("records", "max");
 }
 
 /**
@@ -16,5 +16,5 @@ export async function revalidateRecords() {
  */
 export async function revalidateAudit() {
 	console.log("[Server Action] Revalidating 'audit' tag...");
-	revalidateTag("audit");
+	revalidateTag("audit", "max");
 }
