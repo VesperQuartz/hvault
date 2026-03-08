@@ -19,41 +19,28 @@ export const auth = (env: CFBindings): ReturnType<typeof betterAuth> => {
 		: rawBaseUrl.endsWith("/api")
 			? `${rawBaseUrl}/auth`
 			: `${rawBaseUrl}/api/auth`;
-
-	//@ts-expect-error - Cloudflare Workers types are not up to date
-	return betterAuth({
-		database: drizzleAdapter(db, { provider: "sqlite", schema }),
-		baseURL: authBaseUrl,
-		secret: env.BETTER_AUTH_SECRET,
-		trustedOrigins: [
-			"http://localhost:3000",
-			"http://localhost:8787",
-			"http://127.0.0.1:3000",
-			"http://127.0.0.1:8787",
-			"https://*.workers.dev",
-			"https://*.vercel.app",
-		],
-		advanced: {
-			disableOriginCheck: true,
-			crossSubDomainCookies: {
-				enabled: true,
-			},
-		},
-		cookie: {
-			crossSite: true, // Allow cookies to be sent across different domains (Vercel -> Workers)
-			session_token: {
-				attributes: {
-					sameSite: "none",
-					secure: true,
-					httpOnly: true,
-				},
-			},
-		},
-		emailAndPassword: {
-			enabled: true,
-			autoSignIn: true,
-			requireEmailVerification: false,
-		},
+//@ts-expect-error - Cloudflare Workers types are not up to date
+return betterAuth({
+	database: drizzleAdapter(db, { provider: "sqlite", schema }),
+	baseURL: authBaseUrl,
+	secret: env.BETTER_AUTH_SECRET,
+	trustedOrigins: [
+		"http://localhost:3000",
+		"http://localhost:8787",
+		"http://127.0.0.1:3000",
+		"http://127.0.0.1:8787",
+		"https://*.workers.dev",
+		"https://*.vercel.app",
+		"https://hvault.lilbrown3000.workers.dev",
+	],
+	advanced: {
+		useIsomorphicCrypto: true, // Recommended for Cloudflare Workers
+	},
+	emailAndPassword: {
+		enabled: true,
+		autoSignIn: true,
+		requireEmailVerification: false,
+	},
 		plugins: [
 			bearer(), // Required for token-based auth from extension
 			openAPI(),

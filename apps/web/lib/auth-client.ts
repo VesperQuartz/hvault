@@ -1,19 +1,15 @@
 import { createAuthClient } from "better-auth/react";
 
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787/api";
-
-// Ensure we get just the origin (protocol + host + port) 
-// to avoid path conflicts between baseURL and basePath
-const getOrigin = (url: string) => {
-	try {
-		return new URL(url).origin;
-	} catch (e) {
-		return url;
+const getBaseURL = () => {
+	if (typeof window !== "undefined") {
+		return window.location.origin;
 	}
+	// Fallback for SSR
+	return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 };
 
 export const authClient = createAuthClient({
-	baseURL: getOrigin(rawApiUrl),
+	baseURL: getBaseURL(),
 	basePath: "/api/auth",
 });
 

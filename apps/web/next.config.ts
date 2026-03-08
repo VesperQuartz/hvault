@@ -22,6 +22,18 @@ const nextConfig: NextConfig = {
 			},
 		];
 	},
+	async rewrites() {
+		const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787";
+		// Remove trailing /api if it exists to avoid duplication in the destination
+		const backendUrl = rawUrl.replace(/\/api$/, "");
+		
+		return [
+			{
+				source: "/api/:path*",
+				destination: `${backendUrl}/api/:path*`,
+			},
+		];
+	},
 	output: "standalone",
 	reactStrictMode: true,
 	serverExternalPackages: ["pino", "pino-pretty", "hono-pino/debug-log"],

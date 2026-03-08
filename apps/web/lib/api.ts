@@ -5,11 +5,18 @@ import ky from "ky";
  * ky handles credentials, retries, and error handling automatically
  */
 
-const rawApiUrl =
-	process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787/api";
-const API_BASE_URL = rawApiUrl.endsWith("/api")
-	? rawApiUrl
-	: `${rawApiUrl}/api`;
+const getBaseURL = () => {
+	if (typeof window !== "undefined") {
+		// In the browser, use the local proxy to avoid cross-origin cookie issues
+		return "/api";
+	}
+	// On the server (SSR), call the backend directly
+	const rawApiUrl =
+		process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787/api";
+	return rawApiUrl.endsWith("/api") ? rawApiUrl : `${rawApiUrl}/api`;
+};
+
+const API_BASE_URL = getBaseURL();
 
 // Base ky instance with shared config
 export const api = ky.create({
