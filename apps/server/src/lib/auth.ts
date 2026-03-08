@@ -23,16 +23,22 @@ export const auth = (env: CFBindings): ReturnType<typeof betterAuth> => {
 	return betterAuth({
 		database: drizzleAdapter(db, { provider: "sqlite", schema }),
 		baseURL: authBaseUrl,
+		secret: env.BETTER_AUTH_SECRET,
 		trustedOrigins: [
 			"http://localhost:3000",
-			"http://localhost:*",
 			"http://localhost:8787",
 			"http://127.0.0.1:3000",
 			"http://127.0.0.1:8787",
-			"https://hvault.lilbrown3000.workers.dev",
+			"https://*.workers.dev",
 			"https://*.vercel.app",
+			"https://hvault.lilbrown3000.workers.dev",
 		],
-		secret: env.BETTER_AUTH_SECRET,
+		advanced: {
+			useIsomorphicCrypto: true, // Recommended for Cloudflare Workers
+		},
+		cookie: {
+			crossSite: true, // Allow cookies to be sent across different domains (Vercel -> Workers)
+		},
 		emailAndPassword: {
 			enabled: true,
 			autoSignIn: true,

@@ -102,24 +102,27 @@ app.on(["GET", "POST"], "/auth/*", (c) => auth(c.env).handler(c.req.raw));
 
 // Session middleware MUST come before routes
 app.use("*", async (ctx, next) => {
+	const path = ctx.req.path;
 	// Skip session check for health and auth routes
-	if (ctx.req.path.includes("/health") || ctx.req.path.includes("/auth/")) {
+	if (path.includes("/health") || path.includes("/auth/")) {
 		return next();
 	}
 
 	const authInstance = auth(ctx.env);
-	const headers = ctx.req.raw.headers;
-
+	
+	// Better-auth can validate session from headers, cookies, or the Request object
 	const session = await authInstance.api.getSession({
-		headers,
+		headers: ctx.req.raw.headers,
 	});
 
 	if (!session) {
+		ctx.var.logger.info({ path }, "No active session found");
 		ctx.set("user", null);
 		ctx.set("session", null);
 		return next();
 	}
 
+	ctx.var.logger.info({ path, userId: session.user.id }, "Session validated");
 	ctx.set("user", session.user);
 	ctx.set("session", session.session);
 	return next();
@@ -135,8 +138,15 @@ app.route("/share", shareRoutes);
 
 app.get("/me", (c) => {
 	const user = c.get("user");
+	const session = c.get("session");
+	
 	if (!user) {
-		return c.json({ error: "Unauthorized" }, 401);
+		console.log("[Debug] /me unauthorized. Session is:", !!session);
+		return c.json({ 
+			error: "Unauthorized", 
+			message: "No active session found. Please log in again.",
+			hint: "Ensure cookies are enabled and the domain is trusted."
+		}, 401);
 	}
 	return c.json({ success: true, user });
 });
