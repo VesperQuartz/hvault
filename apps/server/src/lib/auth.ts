@@ -29,6 +29,8 @@ export const auth = (env: CFBindings): ReturnType<typeof betterAuth> => {
 			"http://localhost:8787",
 			"http://127.0.0.1:3000",
 			"http://127.0.0.1:8787",
+			"https://hvault.lilbrown3000.workers.dev",
+			"https://*.vercel.app",
 		],
 		secret: env.BETTER_AUTH_SECRET,
 		emailAndPassword: {
