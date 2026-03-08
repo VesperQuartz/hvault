@@ -1,16 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { useForm } from "@tanstack/react-form";
-import { signIn } from "@/lib/auth-client";
-import { Button } from "@hvault/ui/components/button";
-import { Input } from "@hvault/ui/components/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@hvault/ui/components/card";
-import { Label } from "@hvault/ui/components/label";
 import { Alert, AlertDescription } from "@hvault/ui/components/alert";
-import { Shield, ArrowRight } from "lucide-react";
+import { Button } from "@hvault/ui/components/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from "@hvault/ui/components/card";
+import { Input } from "@hvault/ui/components/input";
+import { Label } from "@hvault/ui/components/label";
+import { useForm } from "@tanstack/react-form";
+import { ArrowRight, Shield } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { signIn } from "@/lib/auth-client";
 
 export default function LoginPage() {
 	const router = useRouter();
@@ -23,18 +30,25 @@ export default function LoginPage() {
 		},
 		onSubmit: async ({ value }) => {
 			setError("");
-			
-			await signIn.email({
-				email: value.email,
-				password: value.password,
-			}, {
-				onSuccess: () => {
-					router.push("/dashboard");
+
+			await signIn.email(
+				{
+					email: value.email,
+					password: value.password,
 				},
-				onError: (ctx) => {
-					setError(ctx.error.message || "Failed to sign in. Please check your credentials.");
-				}
-			});
+				{
+					credentials: "include",
+					onSuccess: () => {
+						router.push("/dashboard");
+					},
+					onError: (ctx) => {
+						setError(
+							ctx.error.message ||
+								"Failed to sign in. Please check your credentials.",
+						);
+					},
+				},
+			);
 		},
 	});
 
@@ -60,131 +74,131 @@ export default function LoginPage() {
 							Enter your credentials to continue
 						</CardDescription>
 					</CardHeader>
-				<form
-					onSubmit={(e) => {
-						e.preventDefault();
-						e.stopPropagation();
-						form.handleSubmit();
-					}}
-				>
-					<CardContent className="space-y-4">
-						{error && (
-							<Alert variant="destructive">
-								<AlertDescription>{error}</AlertDescription>
-							</Alert>
-						)}
-						
-						<form.Field
-							name="email"
-							validators={{
-								onChange: ({ value }) =>
-									!value
-										? "Email is required"
-										: !value.includes("@")
-											? "Invalid email format"
-											: undefined,
-							}}
-						>
-							{(field) => (
-								<div className="space-y-2">
-									<Label htmlFor={field.name}>Email</Label>
-									<Input
-										id={field.name}
-										name={field.name}
-										type="email"
-										placeholder="you@example.com"
-										value={field.state.value}
-										onBlur={field.handleBlur}
-										onChange={(e) => field.handleChange(e.target.value)}
-									/>
-									{field.state.meta.errors.length > 0 && (
-										<p className="text-sm text-destructive">
-											{field.state.meta.errors.join(", ")}
-										</p>
-									)}
-								</div>
+					<form
+						onSubmit={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							form.handleSubmit();
+						}}
+					>
+						<CardContent className="space-y-4">
+							{error && (
+								<Alert variant="destructive">
+									<AlertDescription>{error}</AlertDescription>
+								</Alert>
 							)}
-						</form.Field>
 
-						<form.Field
-							name="password"
-							validators={{
-								onChange: ({ value }) =>
-									!value
-										? "Password is required"
-										: value.length < 8
-											? "Password must be at least 8 characters"
-											: undefined,
-							}}
-						>
-							{(field) => (
-								<div className="space-y-2">
-									<Label htmlFor={field.name}>Password</Label>
-									<Input
-										id={field.name}
-										name={field.name}
-										type="password"
-										placeholder="••••••••"
-										value={field.state.value}
-										onBlur={field.handleBlur}
-										onChange={(e) => field.handleChange(e.target.value)}
-									/>
-									{field.state.meta.errors.length > 0 && (
-										<p className="text-sm text-destructive">
-											{field.state.meta.errors.join(", ")}
-										</p>
-									)}
+							<form.Field
+								name="email"
+								validators={{
+									onChange: ({ value }) =>
+										!value
+											? "Email is required"
+											: !value.includes("@")
+												? "Invalid email format"
+												: undefined,
+								}}
+							>
+								{(field) => (
+									<div className="space-y-2">
+										<Label htmlFor={field.name}>Email</Label>
+										<Input
+											id={field.name}
+											name={field.name}
+											type="email"
+											placeholder="you@example.com"
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(e) => field.handleChange(e.target.value)}
+										/>
+										{field.state.meta.errors.length > 0 && (
+											<p className="text-sm text-destructive">
+												{field.state.meta.errors.join(", ")}
+											</p>
+										)}
+									</div>
+								)}
+							</form.Field>
+
+							<form.Field
+								name="password"
+								validators={{
+									onChange: ({ value }) =>
+										!value
+											? "Password is required"
+											: value.length < 8
+												? "Password must be at least 8 characters"
+												: undefined,
+								}}
+							>
+								{(field) => (
+									<div className="space-y-2">
+										<Label htmlFor={field.name}>Password</Label>
+										<Input
+											id={field.name}
+											name={field.name}
+											type="password"
+											placeholder="••••••••"
+											value={field.state.value}
+											onBlur={field.handleBlur}
+											onChange={(e) => field.handleChange(e.target.value)}
+										/>
+										{field.state.meta.errors.length > 0 && (
+											<p className="text-sm text-destructive">
+												{field.state.meta.errors.join(", ")}
+											</p>
+										)}
+									</div>
+								)}
+							</form.Field>
+						</CardContent>
+						<CardFooter className="flex flex-col space-y-4 pt-6">
+							<form.Subscribe
+								selector={(state) => [state.canSubmit, state.isSubmitting]}
+							>
+								{([canSubmit, isSubmitting]) => (
+									<Button
+										type="submit"
+										className="w-full h-12 text-base shadow-lg"
+										disabled={!canSubmit || isSubmitting}
+									>
+										{isSubmitting ? (
+											<>
+												<div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+												Signing in...
+											</>
+										) : (
+											<>
+												Sign In
+												<ArrowRight className="ml-2 h-4 w-4" />
+											</>
+										)}
+									</Button>
+								)}
+							</form.Subscribe>
+							<div className="relative">
+								<div className="absolute inset-0 flex items-center">
+									<span className="w-full border-t" />
 								</div>
-							)}
-						</form.Field>
-					</CardContent>
-					<CardFooter className="flex flex-col space-y-4 pt-6">
-						<form.Subscribe
-							selector={(state) => [state.canSubmit, state.isSubmitting]}
-						>
-							{([canSubmit, isSubmitting]) => (
-								<Button 
-									type="submit" 
-									className="w-full h-12 text-base shadow-lg" 
-									disabled={!canSubmit || isSubmitting}
-								>
-									{isSubmitting ? (
-										<>
-											<div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-											Signing in...
-										</>
-									) : (
-										<>
-											Sign In
-											<ArrowRight className="ml-2 h-4 w-4" />
-										</>
-									)}
+								<div className="relative flex justify-center text-xs uppercase">
+									<span className="bg-background px-2 text-muted-foreground">
+										New to MediVault?
+									</span>
+								</div>
+							</div>
+							<Link href="/signup" className="w-full">
+								<Button variant="outline" className="w-full h-12" type="button">
+									Create Account
 								</Button>
-							)}
-						</form.Subscribe>
-						<div className="relative">
-							<div className="absolute inset-0 flex items-center">
-								<span className="w-full border-t" />
-							</div>
-							<div className="relative flex justify-center text-xs uppercase">
-								<span className="bg-background px-2 text-muted-foreground">
-									New to MediVault?
-								</span>
-							</div>
-						</div>
-						<Link href="/signup" className="w-full">
-							<Button variant="outline" className="w-full h-12" type="button">
-								Create Account
-							</Button>
-						</Link>
-					</CardFooter>
-				</form>
-			</Card>
-			
-			<p className="text-center text-sm text-muted-foreground mt-6">
-				Protected by AWS KMS & Hedera Blockchain
-			</p>
-		</div>
+							</Link>
+						</CardFooter>
+					</form>
+				</Card>
+
+				<p className="text-center text-sm text-muted-foreground mt-6">
+					Protected by AWS KMS & Hedera Blockchain
+				</p>
+			</div>
 		</div>
 	);
 }

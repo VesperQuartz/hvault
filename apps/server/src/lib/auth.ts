@@ -1,5 +1,6 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth";
+import { nextCookies } from "better-auth/next-js";
 import { admin, bearer, openAPI } from "better-auth/plugins";
 import { drizzle } from "drizzle-orm/d1";
 import type { CFBindings } from "#/src/factory";
@@ -31,10 +32,12 @@ export const auth = (env: CFBindings): ReturnType<typeof betterAuth> => {
 			"http://127.0.0.1:8787",
 			"https://*.workers.dev",
 			"https://*.vercel.app",
-			"https://hvault.lilbrown3000.workers.dev",
 		],
 		advanced: {
-			useIsomorphicCrypto: true, // Recommended for Cloudflare Workers
+			disableOriginCheck: true,
+			crossSubDomainCookies: {
+				enabled: true,
+			},
 		},
 		cookie: {
 			crossSite: true, // Allow cookies to be sent across different domains (Vercel -> Workers)
@@ -58,6 +61,7 @@ export const auth = (env: CFBindings): ReturnType<typeof betterAuth> => {
 				defaultRole: "user",
 				adminRoles: ["admin", "superadmin"],
 			}),
+			nextCookies(),
 			// haveIBeenPwned({
 			// 	customPasswordCompromisedMessage:
 			// 		"Please choose a more secure password.",
