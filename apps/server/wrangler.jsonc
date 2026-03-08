@@ -7,10 +7,13 @@
 		"nodejs_compat"
 	],
 	"vars": {
-		"MY_VAR": "my-variable",
+		"MY_VAR": "my-variable1",
 		"NEXT_PUBLIC_API_URL": "https://hvault.lilbrown3000.workers.dev",
 		"AWS_REGION": "us-east-1",
-		"HEDERA_NETWORK": "testnet"
+		"HEDERA_NETWORK": "testnet",
+		"BETTER_AUTH_URL": "https://hvault.lilbrown3000.workers.dev",
+		"FRONTEND_URL": "https://hvault-web.vercel.app",
+		"HEDERA_API_URL": "https://hvault-hedera-api.vercel.app"
 	},
 	"kv_namespaces": [
 		{
