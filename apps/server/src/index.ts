@@ -1,6 +1,7 @@
 import type { ExportedHandler } from "@cloudflare/workers-types";
 import { sValidator } from "@hono/standard-validator";
 import { Scalar } from "@scalar/hono-api-reference";
+import { and, eq, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { Match } from "effect";
 import { contextStorage, getContext } from "hono/context-storage";
@@ -15,9 +16,8 @@ import pino from "pino";
 import z from "zod";
 import { auth } from "#/src/lib/auth";
 import { createHederaService } from "#/src/lib/hedera";
-import { auditLogs, shareLinks, userKeys } from "./repo/schema";
-import { lt, and, eq } from "drizzle-orm";
 import { type CFBindings, type Env, factory } from "./factory";
+import { auditLogs, shareLinks, userKeys } from "./repo/schema";
 import recordsRoutes from "./routes/records.routes";
 import shareRoutes from "./routes/share.routes";
 
@@ -49,6 +49,9 @@ app.use(
 				"http://localhost:8787",
 				"http://127.0.0.1:3000",
 				"http://127.0.0.1:8787",
+				"https://hvault-web.vercel.app",
+				"https://hvault.lilbrown3000.workers.dev",
+				"https://hvault-hedera-api.vercel.app",
 			];
 
 			// In development, allow all origins
@@ -109,7 +112,7 @@ app.use("*", async (ctx, next) => {
 	}
 
 	const authInstance = auth(ctx.env);
-	
+
 	// Better-auth can validate session from headers, cookies, or the Request object
 	const session = await authInstance.api.getSession({
 		headers: ctx.req.raw.headers,
@@ -139,14 +142,17 @@ app.route("/share", shareRoutes);
 app.get("/me", (c) => {
 	const user = c.get("user");
 	const session = c.get("session");
-	
+
 	if (!user) {
 		console.log("[Debug] /me unauthorized. Session is:", !!session);
-		return c.json({ 
-			error: "Unauthorized", 
-			message: "No active session found. Please log in again.",
-			hint: "Ensure cookies are enabled and the domain is trusted."
-		}, 401);
+		return c.json(
+			{
+				error: "Unauthorized",
+				message: "No active session found. Please log in again.",
+				hint: "Ensure cookies are enabled and the domain is trusted.",
+			},
+			401,
+		);
 	}
 	return c.json({ success: true, user });
 });
@@ -254,10 +260,7 @@ export default {
 				})
 				.from(shareLinks)
 				.where(
-					and(
-						lt(shareLinks.expiresAt, now),
-						eq(shareLinks.isExpired, false)
-					)
+					and(lt(shareLinks.expiresAt, now), eq(shareLinks.isExpired, false)),
 				)
 				.all();
 
@@ -266,7 +269,9 @@ export default {
 				return;
 			}
 
-			console.log(`[Cron] Found ${expiredLinks.length} expired links to process.`);
+			console.log(
+				`[Cron] Found ${expiredLinks.length} expired links to process.`,
+			);
 
 			const hService = createHederaService(env);
 
@@ -289,8 +294,8 @@ export default {
 							{
 								shareLinkId: link.id,
 								expiredAt: link.expiresAt.toISOString(),
-								reason: "Automatic background expiry"
-							}
+								reason: "Automatic background expiry",
+							},
 						);
 
 						// Log to local audit database
@@ -302,10 +307,10 @@ export default {
 							hederaTopicId: userKey.hederaTopicId,
 							hederaTransactionId: hResult.transactionId,
 							hederaSequenceNumber: hResult.sequenceNumber,
-							metadata: JSON.stringify({ 
-								shareLinkId: link.id, 
+							metadata: JSON.stringify({
+								shareLinkId: link.id,
 								expiredAt: link.expiresAt,
-								auto: true 
+								auto: true,
 							}),
 							ipAddress: "127.0.0.1",
 							userAgent: "Cloudflare Cron Task",
@@ -313,13 +318,17 @@ export default {
 					}
 
 					// Mark link as expired in DB
-					await db.update(shareLinks)
+					await db
+						.update(shareLinks)
 						.set({ isExpired: true })
 						.where(eq(shareLinks.id, link.id));
 
 					console.log(`[Cron] Successfully marked link ${link.id} as expired.`);
 				} catch (err) {
-					console.error(`[Cron] Failed to process expired link ${link.id}:`, err);
+					console.error(
+						`[Cron] Failed to process expired link ${link.id}:`,
+						err,
+					);
 				}
 			}
 

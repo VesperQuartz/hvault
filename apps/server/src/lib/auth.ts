@@ -41,6 +41,13 @@ export const auth = (env: CFBindings): ReturnType<typeof betterAuth> => {
 		},
 		cookie: {
 			crossSite: true, // Allow cookies to be sent across different domains (Vercel -> Workers)
+			session_token: {
+				attributes: {
+					sameSite: "none",
+					secure: true,
+					httpOnly: true,
+				},
+			},
 		},
 		emailAndPassword: {
 			enabled: true,
