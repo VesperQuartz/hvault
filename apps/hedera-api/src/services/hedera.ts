@@ -1,4 +1,9 @@
 import {
+	GetPublicKeyCommand,
+	KMSClient,
+	SignCommand,
+} from "@aws-sdk/client-kms";
+import {
 	AccountId,
 	Client,
 	PrivateKey,
@@ -7,11 +12,6 @@ import {
 	TopicId,
 	TopicMessageSubmitTransaction,
 } from "@hashgraph/sdk";
-import {
-	GetPublicKeyCommand,
-	KMSClient,
-	SignCommand,
-} from "@aws-sdk/client-kms";
 // @ts-ignore
 import asn1 from "asn1.js";
 import * as elliptic from "elliptic";
@@ -43,6 +43,7 @@ export interface AuditMessage {
 	userId: string;
 	action:
 		| "UPLOAD"
+		| "LINK_EXPIRED"
 		| "ACCESS"
 		| "SHARE"
 		| "DELETE"
@@ -50,6 +51,7 @@ export interface AuditMessage {
 		| "TAMPER_DETECTED"
 		| "SAVE"
 		| "READ"
+		| "EXPIRED_ACCESS"
 		| "UPDATE"
 		| "READ_ALL";
 	recordId?: string;
