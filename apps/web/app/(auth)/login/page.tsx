@@ -1,23 +1,16 @@
 "use client";
 
-import { Alert, AlertDescription } from "@hvault/ui/components/alert";
-import { Button } from "@hvault/ui/components/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "@hvault/ui/components/card";
-import { Input } from "@hvault/ui/components/input";
-import { Label } from "@hvault/ui/components/label";
-import { useForm } from "@tanstack/react-form";
-import { ArrowRight, Shield } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useForm } from "@tanstack/react-form";
 import { signIn } from "@/lib/auth-client";
+import { Button } from "@hvault/ui/components/button";
+import { Input } from "@hvault/ui/components/input";
+import { Card, CardContent } from "@hvault/ui/components/card";
+import { Label } from "@hvault/ui/components/label";
+import { Alert, AlertDescription } from "@hvault/ui/components/alert";
+import { Shield, ArrowRight, Lock, KeyRound, Fingerprint } from "lucide-react";
 
 export default function LoginPage() {
 	const router = useRouter();
@@ -30,175 +23,158 @@ export default function LoginPage() {
 		},
 		onSubmit: async ({ value }) => {
 			setError("");
-
-			await signIn.email(
-				{
-					email: value.email,
-					password: value.password,
+			
+			await signIn.email({
+				email: value.email,
+				password: value.password,
+			}, {
+				onSuccess: () => {
+					router.push("/dashboard");
 				},
-				{
-					credentials: "include",
-					onSuccess: () => {
-						router.push("/dashboard");
-					},
-					onError: (ctx) => {
-						setError(
-							ctx.error.message ||
-								"Failed to sign in. Please check your credentials.",
-						);
-					},
-				},
-			);
+				onError: (ctx) => {
+					setError(ctx.error.message || "Invalid credentials. Please verify your identity.");
+				}
+			});
 		},
 	});
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-			<div className="w-full max-w-md">
-				<div className="text-center mb-8">
-					<div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg mb-4">
-						<Shield className="h-8 w-8 text-white" />
+		<div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-6 selection:bg-blue-100">
+			<div className="w-full max-w-[1000px] grid lg:grid-cols-2 bg-white rounded-[40px] shadow-2xl overflow-hidden border border-slate-100">
+				
+				{/* Left Side: Brand & Visual */}
+				<div className="hidden lg:flex flex-col justify-between p-12 bg-slate-900 text-white relative overflow-hidden">
+					<div className="absolute top-0 right-0 p-20 opacity-10">
+						<Shield className="h-64 w-64 rotate-12" />
 					</div>
-					<h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-						Welcome Back
-					</h1>
-					<p className="text-muted-foreground">
-						Sign in to access your secure medical records
-					</p>
+					
+					<div className="relative z-10">
+						<Link href="/" className="flex items-center gap-3">
+							<div className="bg-blue-600 p-2 rounded-xl">
+								<Shield className="h-5 w-5 text-white" />
+							</div>
+							<span className="text-xl font-bold tracking-tight">MediVault</span>
+						</Link>
+					</div>
+
+					<div className="relative z-10 space-y-6">
+						<h2 className="text-4xl font-black leading-tight tracking-tighter">
+							Secure gateway to your <span className="text-blue-400">medical history.</span>
+						</h2>
+						<p className="text-slate-400 font-medium leading-relaxed max-w-sm">
+							Sign in to initiate the AWS KMS decryption protocol and access your fingerprinted records.
+						</p>
+						
+						<div className="flex flex-col gap-4 pt-4">
+							<AuthFeature icon={<Lock className="h-4 w-4" />} text="AES-256 Envelope Encryption" />
+							<AuthFeature icon={<Fingerprint className="h-4 w-4" />} text="Hedera Consensus Validation" />
+							<AuthFeature icon={<KeyRound className="h-4 w-4" />} text="Identity-Linked Master Keys" />
+						</div>
+					</div>
+
+					<div className="relative z-10 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+						Verification Node: Testnet-v4
+					</div>
 				</div>
 
-				<Card className="border-2 shadow-xl">
-					<CardHeader className="space-y-1 pb-4">
-						<CardTitle className="text-xl font-semibold">Sign In</CardTitle>
-						<CardDescription>
-							Enter your credentials to continue
-						</CardDescription>
-					</CardHeader>
+				{/* Right Side: Form */}
+				<div className="p-8 md:p-16 flex flex-col justify-center">
+					<div className="space-y-2 mb-10 text-center lg:text-left">
+						<div className="lg:hidden flex justify-center mb-6">
+							<div className="bg-blue-600 p-3 rounded-2xl shadow-xl shadow-blue-100">
+								<Shield className="h-8 w-8 text-white" />
+							</div>
+						</div>
+						<h1 className="text-3xl font-black text-slate-950 tracking-tight">Welcome Back</h1>
+						<p className="text-slate-500 font-medium">Enter your credentials to unlock your vault.</p>
+					</div>
+
 					<form
 						onSubmit={(e) => {
 							e.preventDefault();
 							e.stopPropagation();
 							form.handleSubmit();
 						}}
+						className="space-y-6"
 					>
-						<CardContent className="space-y-4">
-							{error && (
-								<Alert variant="destructive">
-									<AlertDescription>{error}</AlertDescription>
-								</Alert>
-							)}
-
-							<form.Field
-								name="email"
-								validators={{
-									onChange: ({ value }) =>
-										!value
-											? "Email is required"
-											: !value.includes("@")
-												? "Invalid email format"
-												: undefined,
-								}}
-							>
+						{error && (
+							<Alert variant="destructive" className="rounded-2xl border-rose-100 bg-rose-50 text-rose-700">
+								<AlertDescription className="font-bold text-xs">{error}</AlertDescription>
+							</Alert>
+						)}
+						
+						<div className="space-y-5">
+							<form.Field name="email">
 								{(field) => (
 									<div className="space-y-2">
-										<Label htmlFor={field.name}>Email</Label>
+										<Label htmlFor={field.name} className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Email Address</Label>
 										<Input
 											id={field.name}
-											name={field.name}
 											type="email"
-											placeholder="you@example.com"
+											placeholder="name@company.com"
+											className="h-12 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all font-medium"
 											value={field.state.value}
-											onBlur={field.handleBlur}
 											onChange={(e) => field.handleChange(e.target.value)}
 										/>
-										{field.state.meta.errors.length > 0 && (
-											<p className="text-sm text-destructive">
-												{field.state.meta.errors.join(", ")}
-											</p>
-										)}
 									</div>
 								)}
 							</form.Field>
 
-							<form.Field
-								name="password"
-								validators={{
-									onChange: ({ value }) =>
-										!value
-											? "Password is required"
-											: value.length < 8
-												? "Password must be at least 8 characters"
-												: undefined,
-								}}
-							>
+							<form.Field name="password">
 								{(field) => (
 									<div className="space-y-2">
-										<Label htmlFor={field.name}>Password</Label>
+										<div className="flex justify-between items-center px-1">
+											<Label htmlFor={field.name} className="text-[10px] font-black uppercase tracking-widest text-slate-400">Security Key</Label>
+											<Link href="#" className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700">Forgot?</Link>
+										</div>
 										<Input
 											id={field.name}
-											name={field.name}
 											type="password"
-											placeholder="••••••••"
+											placeholder="••••••••••••"
+											className="h-12 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all font-medium"
 											value={field.state.value}
-											onBlur={field.handleBlur}
 											onChange={(e) => field.handleChange(e.target.value)}
 										/>
-										{field.state.meta.errors.length > 0 && (
-											<p className="text-sm text-destructive">
-												{field.state.meta.errors.join(", ")}
-											</p>
-										)}
 									</div>
 								)}
 							</form.Field>
-						</CardContent>
-						<CardFooter className="flex flex-col space-y-4 pt-6">
-							<form.Subscribe
-								selector={(state) => [state.canSubmit, state.isSubmitting]}
-							>
-								{([canSubmit, isSubmitting]) => (
-									<Button
-										type="submit"
-										className="w-full h-12 text-base shadow-lg"
-										disabled={!canSubmit || isSubmitting}
-									>
-										{isSubmitting ? (
-											<>
-												<div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-												Signing in...
-											</>
-										) : (
-											<>
-												Sign In
-												<ArrowRight className="ml-2 h-4 w-4" />
-											</>
-										)}
-									</Button>
-								)}
-							</form.Subscribe>
-							<div className="relative">
-								<div className="absolute inset-0 flex items-center">
-									<span className="w-full border-t" />
-								</div>
-								<div className="relative flex justify-center text-xs uppercase">
-									<span className="bg-background px-2 text-muted-foreground">
-										New to MediVault?
-									</span>
-								</div>
-							</div>
-							<Link href="/signup" className="w-full">
-								<Button variant="outline" className="w-full h-12" type="button">
-									Create Account
-								</Button>
-							</Link>
-						</CardFooter>
-					</form>
-				</Card>
+						</div>
 
-				<p className="text-center text-sm text-muted-foreground mt-6">
-					Protected by AWS KMS & Hedera Blockchain
-				</p>
+						<form.Subscribe selector={(s) => [s.canSubmit, s.isSubmitting]}>
+							{([canSubmit, isSubmitting]) => (
+								<Button 
+									type="submit" 
+									className="w-full h-14 rounded-2xl text-base font-black shadow-blue-200 shadow-2xl bg-blue-600 hover:bg-blue-700 mt-4" 
+									disabled={!canSubmit || isSubmitting}
+								>
+									{isSubmitting ? "Unlocking Vault..." : "Access Vault"}
+									{!isSubmitting && <ArrowRight className="ml-2 h-5 w-5" />}
+								</Button>
+							)}
+						</form.Subscribe>
+
+						<div className="pt-8 text-center">
+							<p className="text-sm text-slate-500 font-medium">
+								Don't have a vault yet?{" "}
+								<Link href="/signup" className="text-blue-600 font-black hover:underline underline-offset-4">
+									Create One Now
+								</Link>
+							</p>
+						</div>
+					</form>
+				</div>
 			</div>
+		</div>
+	);
+}
+
+function AuthFeature({ icon, text }: { icon: React.ReactNode, text: string }) {
+	return (
+		<div className="flex items-center gap-3 text-sm font-medium text-slate-300">
+			<div className="bg-white/10 p-1.5 rounded-lg border border-white/10">
+				{icon}
+			</div>
+			{text}
 		</div>
 	);
 }

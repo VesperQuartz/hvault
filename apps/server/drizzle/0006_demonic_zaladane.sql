@@ -1,0 +1,1 @@
+ALTER TABLE `share_links` ADD `is_expired` integer DEFAULT false NOT NULL;

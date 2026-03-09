@@ -5,10 +5,12 @@ import { shareApi, formatHederaTxId } from "@/lib/api";
 import { Button } from "@hvault/ui/components/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@hvault/ui/components/card";
 import { Alert, AlertDescription } from "@hvault/ui/components/alert";
-import { CheckCircle, XCircle, Shield, ExternalLink, Download, AlertTriangle, ArrowLeft } from "lucide-react";
+import { CheckCircle, XCircle, Shield, ExternalLink, Download, AlertTriangle, ArrowLeft, Eye, FileText, Fingerprint, Lock, ShieldCheck, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useSession } from "@/lib/auth-client";
 import Link from "next/link";
+import { cn } from "@hvault/ui/lib/utils";
+import { Badge } from "@hvault/ui/components/badge";
 
 interface ShareInfo {
 	shareLink: {
@@ -58,10 +60,10 @@ export default function ViewShareClient({ token, initialInfo }: ViewShareClientP
 			if (response.success) {
 				setInfo(response);
 			} else {
-				throw new Error("Failed to load share info");
+				throw new Error("Invalid or expired share token.");
 			}
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to load file info");
+			setError(err instanceof Error ? err.message : "Failed to load document info.");
 		} finally {
 			setLoading(false);
 		}
@@ -83,7 +85,7 @@ export default function ViewShareClient({ token, initialInfo }: ViewShareClientP
 				hederaTransaction: result.hederaTransaction,
 			});
 		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to access file");
+			setError(err instanceof Error ? err.message : "Access denied. Verification failed.");
 		} finally {
 			setViewLoading(false);
 		}
@@ -101,210 +103,213 @@ export default function ViewShareClient({ token, initialInfo }: ViewShareClientP
 	};
 
 	const formatFileSize = (bytes: number) => {
-		if (bytes === 0) return "0 Bytes";
+		if (bytes === 0) return "0 B";
 		const k = 1024;
-		const sizes = ["Bytes", "KB", "MB", "GB"];
+		const sizes = ["B", "KB", "MB", "GB"];
 		const i = Math.floor(Math.log(bytes) / Math.log(k));
 		return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
 	};
 
 	if (loading) {
 		return (
-			<div className="flex items-center justify-center min-h-screen">
-				<div className="text-center">
-					<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-					<p className="mt-4 text-muted-foreground">Loading...</p>
-				</div>
+			<div className="flex items-center justify-center min-h-screen bg-[#f8fafc]">
+				<div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
-			<div className="max-w-4xl mx-auto space-y-6">
-				{/* Top Navigation */}
-				<div className="flex justify-start">
-					{session ? (
-						<Link href="/dashboard">
-							<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
-								<ArrowLeft className="h-4 w-4 mr-2" />
-								Back to Dashboard
-							</Button>
-						</Link>
-					) : (
-						<Link href="/">
-							<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
-								<ArrowLeft className="h-4 w-4 mr-2" />
-								Back to Home
-							</Button>
-						</Link>
-					)}
-				</div>
-
-				{/* Header */}
-				<div className="text-center">
-					<div className="flex items-center justify-center mb-4">
-						<Shield className="h-12 w-12 text-primary" />
+		<div className="min-h-screen bg-[#f8fafc] py-12 px-6 selection:bg-blue-100">
+			<div className="max-w-5xl mx-auto space-y-10">
+				{/* Public Header */}
+				<div className="flex flex-col md:flex-row justify-between items-center gap-6">
+					<Link href="/" className="flex items-center gap-3 group">
+						<div className="bg-blue-600 p-2 rounded-xl shadow-lg shadow-blue-100 group-hover:scale-105 transition-transform">
+							<Shield className="h-5 w-5 text-white" />
+						</div>
+						<span className="text-xl font-bold tracking-tight text-slate-900">MediVault</span>
+					</Link>
+					
+					<div className="flex items-center gap-4 text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white px-4 py-2 rounded-2xl border shadow-sm">
+						<div className="flex items-center gap-1.5 border-r pr-4">
+							<Lock className="h-3 w-3 text-blue-500" />
+							End-to-End Encrypted
+						</div>
+						<div className="flex items-center gap-1.5">
+							<Fingerprint className="h-3 w-3 text-emerald-500" />
+							Blockchain Verified
+						</div>
 					</div>
-					<h1 className="text-3xl font-bold text-gray-900">
-						Shared Medical Record
-					</h1>
-					<p className="text-muted-foreground mt-2">
-						Secured with blockchain verification
-					</p>
 				</div>
 
-				{error && (
-					<Alert variant="destructive">
-						<AlertTriangle className="h-4 w-4" />
-						<AlertDescription>{error}</AlertDescription>
-					</Alert>
-				)}
-
-				{info && (
-					<>
-						{/* File Info Card */}
-						<Card>
-							<CardHeader>
-								<CardTitle>{info.record.fileName}</CardTitle>
-								<CardDescription>
-									Uploaded {formatDistanceToNow(new Date(info.record.uploadedAt))} ago •{" "}
-									{formatFileSize(info.record.fileSize)}
-								</CardDescription>
-							</CardHeader>
-							<CardContent className="space-y-4">
-								<div className="grid grid-cols-2 gap-4 text-sm">
-									<div>
-										<p className="text-muted-foreground">File Type</p>
-										<p className="font-medium">{info.record.mimeType}</p>
+				{error ? (
+					<div className="max-w-md mx-auto py-20 text-center space-y-6">
+						<div className="bg-rose-50 w-20 h-20 rounded-[32px] flex items-center justify-center mx-auto border border-rose-100">
+							<AlertTriangle className="h-10 w-10 text-rose-500" />
+						</div>
+						<div className="space-y-2">
+							<h2 className="text-2xl font-black text-slate-900 tracking-tight">Access Denied</h2>
+							<p className="text-slate-500 font-medium">{error}</p>
+						</div>
+						<Link href="/">
+							<Button variant="outline" className="rounded-full px-8">Return Home</Button>
+						</Link>
+					</div>
+				) : info && (
+					<div className="grid lg:grid-cols-3 gap-10 items-start">
+						{/* Sidebar Info */}
+						<div className="space-y-6">
+							<Card className="rounded-[32px] border-none bg-slate-900 text-white overflow-hidden shadow-2xl relative">
+								<div className="absolute top-0 right-0 p-6 opacity-10">
+									<FileText className="h-24 w-24" />
+								</div>
+								<CardHeader className="p-8">
+									<Badge className="w-fit mb-4 bg-blue-600 border-none font-black text-[10px] uppercase tracking-widest px-3">Shared Document</Badge>
+									<CardTitle className="text-2xl font-bold tracking-tight leading-tight">
+										{info.record.fileName}
+									</CardTitle>
+									<CardDescription className="text-slate-400 font-medium pt-2">
+										Uploaded {formatDistanceToNow(new Date(info.record.uploadedAt))} ago
+									</CardDescription>
+								</CardHeader>
+								<CardContent className="p-8 pt-0 space-y-6">
+									<div className="grid grid-cols-2 gap-4">
+										<InfoStat label="File Size" value={formatFileSize(info.record.fileSize)} />
+										<InfoStat label="Accessed" value={`${info.shareLink.accessCount} times`} />
 									</div>
-									<div>
-										<p className="text-muted-foreground">Times Accessed</p>
-										<p className="font-medium">{info.shareLink.accessCount}</p>
-									</div>
-									<div>
-										<p className="text-muted-foreground">Link Expires</p>
-										<p className="font-medium">
-											{formatDistanceToNow(new Date(info.shareLink.expiresAt))} from now
-										</p>
-									</div>
-									<div>
-										<p className="text-muted-foreground">Hedera Proof</p>
-										{info.record.hederaTransactionId ? (
-											<a
+									
+									<div className="pt-6 border-t border-white/10 flex items-center justify-between">
+										<div className="space-y-1">
+											<div className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+												<Clock className="h-3 w-3" />
+												Expires In
+											</div>
+											<div className="text-sm font-bold text-blue-400">
+												{formatDistanceToNow(new Date(info.shareLink.expiresAt))}
+											</div>
+										</div>
+										
+										{info.record.hederaTransactionId && (
+											<a 
 												href={`https://hashscan.io/testnet/transaction/${formatHederaTxId(info.record.hederaTransactionId)}`}
 												target="_blank"
 												rel="noopener noreferrer"
-												className="flex items-center text-primary hover:underline font-medium"
+												className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors border border-white/10"
+												title="Blockchain Consensus Proof"
 											>
-												<ExternalLink className="h-3 w-3 mr-1" />
-												View
+												<ShieldCheck className="h-5 w-5 text-blue-400" />
 											</a>
-										) : (
-											<p className="font-medium">N/A</p>
 										)}
 									</div>
-								</div>
+								</CardContent>
+							</Card>
 
-								{!fileData && (
-									<Button
-										onClick={handleViewFile}
+							<div className="bg-white rounded-[32px] border p-8 space-y-4 shadow-sm">
+								<h4 className="text-xs font-black uppercase tracking-widest text-slate-400">Security Protocol</h4>
+								<p className="text-sm text-slate-500 leading-relaxed font-medium">
+									This document is retrieved via an ephemeral AWS KMS session. The hash will be 
+									instantly compared against the Hedera public ledger upon decryption.
+								</p>
+							</div>
+						</div>
+
+						{/* Main View Area */}
+						<div className="lg:col-span-2 space-y-6">
+							{!fileData ? (
+								<div className="bg-white rounded-[40px] border shadow-sm p-16 text-center space-y-8 min-h-[500px] flex flex-col items-center justify-center">
+									<div className="bg-blue-50 w-24 h-24 rounded-[32px] flex items-center justify-center border border-blue-100 shadow-sm mb-4">
+										<Eye className="h-10 w-10 text-blue-600" />
+									</div>
+									<div className="space-y-2">
+										<h3 className="text-2xl font-black text-slate-900 tracking-tight">Protected Content</h3>
+										<p className="text-slate-500 font-medium max-w-sm mx-auto">
+											Click below to initiate the secure verification and decryption sequence.
+										</p>
+									</div>
+									<Button 
+										onClick={handleViewFile} 
 										disabled={viewLoading}
-										className="w-full"
 										size="lg"
+										className="h-14 px-12 rounded-full font-black text-base shadow-blue-200 shadow-2xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
 									>
-										{viewLoading ? "Verifying & Loading..." : "View File"}
+										{viewLoading ? "Verifying Fingerprint..." : "Verify & View File"}
 									</Button>
-								)}
-							</CardContent>
-						</Card>
-
-						{/* Verification Status */}
-						{fileData && (
-							<>
-								<Alert className={fileData.verified ? "border-green-500 bg-green-50" : "border-red-500 bg-red-50"}>
-									<div className="flex items-start space-x-3">
-										{fileData.verified ? (
-											<CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-										) : (
-											<XCircle className="h-5 w-5 text-red-600 mt-0.5" />
-										)}
-										<div className="flex-1">
-											<h4 className={`font-medium ${fileData.verified ? "text-green-900" : "text-red-900"}`}>
-												{fileData.verified ? "File Verified ✓" : "Verification Failed ✗"}
-											</h4>
-											<p className={`text-sm mt-1 ${fileData.verified ? "text-green-800" : "text-red-800"}`}>
-												{fileData.verified
-													? "This file matches its original Hedera blockchain fingerprint. No tampering detected."
-													: "This file does NOT match its blockchain fingerprint. It may have been tampered with."}
-											</p>
-											{fileData.hederaTransaction && (
-												<a
-													href={`https://hashscan.io/testnet/transaction/${formatHederaTxId(fileData.hederaTransaction)}`}
-													target="_blank"
-													rel="noopener noreferrer"
-													className="text-sm flex items-center mt-2 text-primary hover:underline"
-												>
-													<ExternalLink className="h-3 w-3 mr-1" />
-													View blockchain proof
-												</a>
-											)}
-										</div>
-									</div>
-								</Alert>
-
-								{/* File Viewer */}
-								<Card>
-									<CardContent className="p-0">
-										{fileData.mimeType === "application/pdf" ? (
-											<iframe
-												src={fileData.url}
-												className="w-full h-[600px] rounded-lg"
-												title={fileData.fileName}
-											/>
-										) : fileData.mimeType.startsWith("image/") ? (
-											<img
-												src={fileData.url}
-												alt={fileData.fileName}
-												className="w-full h-auto rounded-lg"
-											/>
-										) : (
-											<div className="p-8 text-center">
-												<p className="text-muted-foreground">
-													Preview not available for this file type
-												</p>
-											</div>
-										)}
-									</CardContent>
-								</Card>
-
-								<Button onClick={handleDownload} variant="outline" className="w-full">
-									<Download className="h-4 w-4 mr-2" />
-									Download File
-								</Button>
-							</>
-						)}
-
-						{/* Security Info */}
-						<Card className="bg-blue-50 border-blue-200">
-							<CardContent className="pt-6">
-								<div className="flex items-start space-x-3">
-									<Shield className="h-5 w-5 text-blue-600 mt-0.5" />
-									<div className="text-sm text-blue-900">
-										<p className="font-medium mb-2">How this file is protected:</p>
-										<ul className="space-y-1 list-disc list-inside">
-											<li>Encrypted with AWS KMS encryption</li>
-											<li>Original hash stored on Hedera blockchain</li>
-											<li>Automatic tamper detection on every access</li>
-											<li>All access permanently logged</li>
-										</ul>
-									</div>
 								</div>
-							</CardContent>
-						</Card>
-					</>
+							) : (
+								<div className="space-y-6 animate-in fade-in duration-700">
+									<div className={cn(
+										"rounded-3xl border p-6 flex items-center gap-4 shadow-sm",
+										fileData.verified ? "bg-emerald-50 border-emerald-100" : "bg-rose-50 border-rose-100"
+									)}>
+										<div className={cn(
+											"p-2 rounded-xl",
+											fileData.verified ? "bg-emerald-100" : "bg-rose-100"
+										)}>
+											{fileData.verified ? <ShieldCheck className="h-6 w-6 text-emerald-600" /> : <XCircle className="h-6 w-6 text-rose-600" />}
+										</div>
+										<div className="flex-1">
+											<h4 className={cn("font-bold text-sm", fileData.verified ? "text-emerald-900" : "text-rose-900")}>
+												{fileData.verified ? "Cryptographic Integrity Confirmed" : "Integrity Verification Failed"}
+											</h4>
+											<p className={cn("text-xs font-medium", fileData.verified ? "text-emerald-700" : "text-rose-700")}>
+												{fileData.verified 
+													? "This document matches its original blockchain fingerprint. No tampering detected." 
+													: "Document mismatch detected. This file may have been altered since upload."}
+											</p>
+										</div>
+										<Button 
+											variant="ghost" 
+											size="sm" 
+											onClick={handleDownload}
+											className="rounded-xl font-bold text-xs"
+										>
+											<Download className="h-4 w-4 mr-2" />
+											Download
+										</Button>
+									</div>
+
+									<Card className="rounded-[40px] border shadow-2xl overflow-hidden bg-white">
+										<CardContent className="p-0">
+											{fileData.mimeType === "application/pdf" ? (
+												<iframe
+													src={fileData.url}
+													className="w-full h-[750px]"
+													title={fileData.fileName}
+												/>
+											) : fileData.mimeType.startsWith("image/") ? (
+												<div className="p-4 bg-slate-50 min-h-[500px] flex items-center justify-center">
+													<img
+														src={fileData.url}
+														alt={fileData.fileName}
+														className="max-w-full h-auto rounded-2xl shadow-lg border border-white"
+													/>
+												</div>
+											) : (
+												<div className="p-32 text-center space-y-4">
+													<AlertTriangle className="h-12 w-12 text-slate-300 mx-auto" />
+													<p className="text-slate-500 font-bold">
+														Native preview not available for this type
+													</p>
+													<Button onClick={handleDownload} variant="outline" className="rounded-full">Download to View</Button>
+												</div>
+											)}
+										</CardContent>
+									</Card>
+								</div>
+							)}
+						</div>
+					</div>
 				)}
 			</div>
+		</div>
+	);
+}
+
+function InfoStat({ label, value }: { label: string, value: string }) {
+	return (
+		<div className="space-y-1">
+			<div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{label}</div>
+			<div className="text-sm font-bold text-white">{value}</div>
 		</div>
 	);
 }

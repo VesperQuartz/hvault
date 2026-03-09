@@ -193,7 +193,8 @@ recordsRoutes.post(
 				hederaSequenceNumber: auditResult.sequenceNumber,
 				metadata: JSON.stringify({ fileName: file.name, fileSize: file.size }),
 				ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-real-ip") || c.req.header("x-forwarded-for") || "127.0.0.1",
-				userAgent: c.req.header("user-agent") || c.req.header("User-Agent") || "Unknown",			});
+				userAgent: c.req.header("user-agent") || c.req.header("User-Agent") || "Unknown",
+			});
 
 			hederaService.close();
 
@@ -244,6 +245,7 @@ recordsRoutes.get("/", async (c) => {
 				uploadedAt: records.uploadedAt,
 				hederaTransactionId: records.hederaTransactionId,
 				shareLinkCount: count(shareLinks.id),
+				totalAccessCount: sql<number>`COALESCE(SUM(${shareLinks.accessCount}), 0)`.mapWith(Number),
 			})
 			.from(records)
 			.leftJoin(shareLinks, eq(shareLinks.recordId, records.id))
@@ -281,8 +283,6 @@ recordsRoutes.get("/audit", async (c) => {
 			.from(auditLogs)
 			.where(eq(auditLogs.userId, user.id))
 			.orderBy(desc(auditLogs.timestamp));
-
-		console.log(`[Backend] Returning ${logs.length} audit logs. First log fields:`, Object.keys(logs[0] || {}));
 
 		return c.json({
 			success: true,
@@ -420,7 +420,8 @@ recordsRoutes.get("/:id/download", async (c) => {
 				hederaSequenceNumber: auditResult.sequenceNumber,
 				metadata: JSON.stringify({ action: "download" }),
 				ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-real-ip") || c.req.header("x-forwarded-for") || "127.0.0.1",
-				userAgent: c.req.header("user-agent") || c.req.header("User-Agent") || "Unknown",			});
+				userAgent: c.req.header("user-agent") || c.req.header("User-Agent") || "Unknown",
+			});
 
 			hederaService.close();
 		}
@@ -502,7 +503,8 @@ recordsRoutes.delete("/:id", async (c) => {
 				hederaSequenceNumber: auditResult.sequenceNumber,
 				metadata: JSON.stringify({ fileName: record.fileName }),
 				ipAddress: c.req.header("cf-connecting-ip") || c.req.header("x-real-ip") || c.req.header("x-forwarded-for") || "127.0.0.1",
-				userAgent: c.req.header("user-agent") || c.req.header("User-Agent") || "Unknown",			});
+				userAgent: c.req.header("user-agent") || c.req.header("User-Agent") || "Unknown",
+			});
 
 			hederaService.close();
 		}

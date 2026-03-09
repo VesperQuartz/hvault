@@ -61,6 +61,7 @@ shareRoutes.post(
 				userId: user.id,
 				token,
 				expiresAt,
+				isExpired: false,
 			});
 
 			// Get user's Hedera topic

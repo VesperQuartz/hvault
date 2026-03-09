@@ -43,6 +43,13 @@
       "when": 1772362653639,
       "tag": "0005_skinny_adam_warlock",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1773058118593,
+      "tag": "0006_demonic_zaladane",
+      "breakpoints": true
     }
   ]
 }

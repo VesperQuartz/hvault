@@ -2,22 +2,14 @@
 
 import { Alert, AlertDescription } from "@hvault/ui/components/alert";
 import { Button } from "@hvault/ui/components/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardFooter,
-	CardHeader,
-	CardTitle,
-} from "@hvault/ui/components/card";
 import { Input } from "@hvault/ui/components/input";
 import { Label } from "@hvault/ui/components/label";
 import { useForm } from "@tanstack/react-form";
-import { ArrowRight, Check, Shield } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { signUp } from "@/lib/auth-client";
+import { Shield, ArrowRight, Check, Lock, Fingerprint, Globe, ShieldCheck } from "lucide-react";
 
 export default function SignupPage() {
 	const router = useRouter();
@@ -41,15 +33,11 @@ export default function SignupPage() {
 					callbackURL: "/dashboard",
 				},
 				{
-					credentials: "include",
 					onSuccess: () => {
 						router.push("/dashboard");
 					},
 					onError: (ctx) => {
-						setError(
-							ctx.error.message ||
-								"Failed to create account. Please try again.",
-						);
+						setError(ctx.error.message || "Protocol initialization failed. Please try again.");
 					},
 				},
 			);
@@ -57,242 +45,193 @@ export default function SignupPage() {
 	});
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
-			<div className="w-full max-w-md">
-				<div className="text-center mb-8">
-					<div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg mb-4">
-						<Shield className="h-8 w-8 text-white" />
+		<div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-6 selection:bg-blue-100">
+			<div className="w-full max-w-[1100px] grid lg:grid-cols-5 bg-white rounded-[40px] shadow-2xl overflow-hidden border border-slate-100">
+				
+				{/* Left Side: Brand & Benefits (2/5 columns) */}
+				<div className="hidden lg:flex lg:col-span-2 flex-col justify-between p-12 bg-slate-900 text-white relative overflow-hidden">
+					<div className="absolute top-0 right-0 p-20 opacity-10">
+						<ShieldCheck className="h-64 w-64 -rotate-12" />
 					</div>
-					<h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-						Join MediVault
-					</h1>
-					<p className="text-muted-foreground">
-						Start securing your medical records today
-					</p>
+					
+					<div className="relative z-10">
+						<Link href="/" className="flex items-center gap-3">
+							<div className="bg-blue-600 p-2 rounded-xl">
+								<Shield className="h-5 w-5 text-white" />
+							</div>
+							<span className="text-xl font-bold tracking-tight">MediVault</span>
+						</Link>
+					</div>
+
+					<div className="relative z-10 space-y-8">
+						<div className="space-y-4">
+							<h2 className="text-4xl font-black leading-[1.1] tracking-tighter">
+								The future of <span className="text-blue-400">patient-owned</span> data.
+							</h2>
+							<p className="text-slate-400 font-medium leading-relaxed">
+								Join thousands of users who have reclaimed ownership of their medical records using military-grade security.
+							</p>
+						</div>
+						
+						<div className="space-y-6">
+							<BenefitItem 
+								icon={<Lock className="h-5 w-5 text-blue-400" />} 
+								title="End-to-End Encryption" 
+								desc="Files are encrypted locally before being stored in the vault." 
+							/>
+							<BenefitItem 
+								icon={<Fingerprint className="h-5 w-5 text-blue-400" />} 
+								title="Blockchain Consensus" 
+								desc="Every record is fingerprinted on the Hedera public ledger." 
+							/>
+							<BenefitItem 
+								icon={<Globe className="h-5 w-5 text-blue-400" />} 
+								title="Global Portability" 
+								desc="Access and share your records with any doctor, anywhere." 
+							/>
+						</div>
+					</div>
+
+					<div className="relative z-10 flex items-center gap-2">
+						<div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+						<span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+							Genesis Node: Active
+						</span>
+					</div>
 				</div>
 
-				<Card className="border-2 shadow-xl">
-					<CardHeader className="space-y-1 pb-4">
-						<CardTitle className="text-xl font-semibold">
-							Create Account
-						</CardTitle>
-						<CardDescription>
-							Get started with your free secure vault
-						</CardDescription>
-					</CardHeader>
-					<form
-						onSubmit={(e) => {
-							e.preventDefault();
-							e.stopPropagation();
-							form.handleSubmit();
-						}}
-					>
-						<CardContent className="space-y-4">
+				{/* Right Side: Form (3/5 columns) */}
+				<div className="lg:col-span-3 p-8 md:p-16 flex flex-col justify-center bg-white">
+					<div className="max-w-md mx-auto w-full">
+						<div className="space-y-2 mb-10 text-center lg:text-left">
+							<div className="lg:hidden flex justify-center mb-6">
+								<div className="bg-blue-600 p-3 rounded-2xl shadow-xl shadow-blue-100">
+									<Shield className="h-8 w-8 text-white" />
+								</div>
+							</div>
+							<h1 className="text-3xl font-black text-slate-950 tracking-tight">Create Vault</h1>
+							<p className="text-slate-500 font-medium">Initialize your secure medical record environment.</p>
+						</div>
+
+						<form
+							onSubmit={(e) => {
+								e.preventDefault();
+								e.stopPropagation();
+								form.handleSubmit();
+							}}
+							className="space-y-5"
+						>
 							{error && (
-								<Alert variant="destructive">
-									<AlertDescription>{error}</AlertDescription>
+								<Alert variant="destructive" className="rounded-2xl border-rose-100 bg-rose-50 text-rose-700">
+									<AlertDescription className="font-bold text-xs">{error}</AlertDescription>
 								</Alert>
 							)}
+							
+							<div className="grid md:grid-cols-2 gap-4">
+								<form.Field name="name">
+									{(field) => (
+										<div className="space-y-1.5">
+											<Label htmlFor={field.name} className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Full Name</Label>
+											<Input
+												id={field.name}
+												placeholder="John Doe"
+												className="h-11 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all font-medium"
+												value={field.state.value}
+												onChange={(e) => field.handleChange(e.target.value)}
+											/>
+										</div>
+									)}
+								</form.Field>
 
-							<form.Field
-								name="name"
-								validators={{
-									onChange: ({ value }) =>
-										!value
-											? "Name is required"
-											: value.length < 2
-												? "Name must be at least 2 characters"
-												: undefined,
-								}}
-							>
+								<form.Field name="email">
+									{(field) => (
+										<div className="space-y-1.5">
+											<Label htmlFor={field.name} className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Email Address</Label>
+											<Input
+												id={field.name}
+												type="email"
+												placeholder="name@email.com"
+												className="h-11 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all font-medium"
+												value={field.state.value}
+												onChange={(e) => field.handleChange(e.target.value)}
+											/>
+										</div>
+									)}
+								</form.Field>
+							</div>
+
+							<form.Field name="password">
 								{(field) => (
-									<div className="space-y-2">
-										<Label htmlFor={field.name}>Full Name</Label>
+									<div className="space-y-1.5">
+										<Label htmlFor={field.name} className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Create Security Key</Label>
 										<Input
 											id={field.name}
-											name={field.name}
-											type="text"
-											placeholder="John Doe"
-											value={field.state.value}
-											onBlur={field.handleBlur}
-											onChange={(e) => field.handleChange(e.target.value)}
-										/>
-										{field.state.meta.errors.length > 0 && (
-											<p className="text-sm text-destructive">
-												{field.state.meta.errors.join(", ")}
-											</p>
-										)}
-									</div>
-								)}
-							</form.Field>
-
-							<form.Field
-								name="email"
-								validators={{
-									onChange: ({ value }) =>
-										!value
-											? "Email is required"
-											: !value.includes("@")
-												? "Invalid email format"
-												: undefined,
-								}}
-							>
-								{(field) => (
-									<div className="space-y-2">
-										<Label htmlFor={field.name}>Email</Label>
-										<Input
-											id={field.name}
-											name={field.name}
-											type="email"
-											placeholder="you@example.com"
-											value={field.state.value}
-											onBlur={field.handleBlur}
-											onChange={(e) => field.handleChange(e.target.value)}
-										/>
-										{field.state.meta.errors.length > 0 && (
-											<p className="text-sm text-destructive">
-												{field.state.meta.errors.join(", ")}
-											</p>
-										)}
-									</div>
-								)}
-							</form.Field>
-
-							<form.Field
-								name="password"
-								validators={{
-									onChange: ({ value }) =>
-										!value
-											? "Password is required"
-											: value.length < 8
-												? "Password must be at least 8 characters"
-												: undefined,
-								}}
-							>
-								{(field) => (
-									<div className="space-y-2">
-										<Label htmlFor={field.name}>Password</Label>
-										<Input
-											id={field.name}
-											name={field.name}
 											type="password"
-											placeholder="••••••••"
+											placeholder="Min. 8 characters"
+											className="h-11 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all font-medium"
 											value={field.state.value}
-											onBlur={field.handleBlur}
 											onChange={(e) => field.handleChange(e.target.value)}
 										/>
-										{field.state.meta.errors.length > 0 && (
-											<p className="text-sm text-destructive">
-												{field.state.meta.errors.join(", ")}
-											</p>
-										)}
 									</div>
 								)}
 							</form.Field>
 
-							<form.Field
-								name="confirmPassword"
-								validators={{
-									onChangeListenTo: ["password"],
-									onChange: ({ value, fieldApi }) => {
-										const password = fieldApi.form.getFieldValue("password");
-										return !value
-											? "Please confirm your password"
-											: value !== password
-												? "Passwords do not match"
-												: undefined;
-									},
-								}}
-							>
+							<form.Field name="confirmPassword">
 								{(field) => (
-									<div className="space-y-2">
-										<Label htmlFor={field.name}>Confirm Password</Label>
+									<div className="space-y-1.5">
+										<Label htmlFor={field.name} className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Confirm Key</Label>
 										<Input
 											id={field.name}
-											name={field.name}
 											type="password"
-											placeholder="••••••••"
+											placeholder="Repeat security key"
+											className="h-11 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white transition-all font-medium"
 											value={field.state.value}
-											onBlur={field.handleBlur}
 											onChange={(e) => field.handleChange(e.target.value)}
 										/>
-										{field.state.meta.errors.length > 0 && (
-											<p className="text-sm text-destructive">
-												{field.state.meta.errors.join(", ")}
-											</p>
-										)}
 									</div>
 								)}
 							</form.Field>
-						</CardContent>
-						<CardFooter className="flex flex-col space-y-4 pt-6">
-							{/* Benefits */}
-							<div className="bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-2 text-sm">
-								<p className="font-semibold text-blue-900 flex items-center gap-2">
-									<Shield className="h-4 w-4" />
-									What you get:
+
+							<div className="pt-2">
+								<form.Subscribe selector={(s) => [s.canSubmit, s.isSubmitting]}>
+									{([canSubmit, isSubmitting]) => (
+										<Button 
+											type="submit" 
+											className="w-full h-14 rounded-2xl text-base font-black shadow-blue-200 shadow-2xl bg-blue-600 hover:bg-blue-700" 
+											disabled={!canSubmit || isSubmitting}
+										>
+											{isSubmitting ? "Initializing Protocol..." : "Create Your Vault"}
+											{!isSubmitting && <ArrowRight className="ml-2 h-5 w-5" />}
+										</Button>
+									)}
+								</form.Subscribe>
+							</div>
+
+							<div className="pt-6 text-center">
+								<p className="text-sm text-slate-500 font-medium">
+									Already have a vault?{" "}
+									<Link href="/login" className="text-blue-600 font-black hover:underline underline-offset-4">
+										Access It Now
+									</Link>
 								</p>
-								<ul className="space-y-1.5 text-blue-800">
-									<li className="flex items-center gap-2">
-										<Check className="h-4 w-4 text-blue-600" />
-										Military-grade encryption
-									</li>
-									<li className="flex items-center gap-2">
-										<Check className="h-4 w-4 text-blue-600" />
-										Blockchain verification
-									</li>
-									<li className="flex items-center gap-2">
-										<Check className="h-4 w-4 text-blue-600" />
-										Secure sharing with doctors
-									</li>
-								</ul>
 							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
 
-							<form.Subscribe
-								selector={(state) => [state.canSubmit, state.isSubmitting]}
-							>
-								{([canSubmit, isSubmitting]) => (
-									<Button
-										type="submit"
-										className="w-full h-12 text-base shadow-lg"
-										disabled={!canSubmit || isSubmitting}
-									>
-										{isSubmitting ? (
-											<>
-												<div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-												Creating account...
-											</>
-										) : (
-											<>
-												Create Account
-												<ArrowRight className="ml-2 h-4 w-4" />
-											</>
-										)}
-									</Button>
-								)}
-							</form.Subscribe>
-							<div className="relative">
-								<div className="absolute inset-0 flex items-center">
-									<span className="w-full border-t" />
-								</div>
-								<div className="relative flex justify-center text-xs uppercase">
-									<span className="bg-background px-2 text-muted-foreground">
-										Already have an account?
-									</span>
-								</div>
-							</div>
-							<Link href="/login" className="w-full">
-								<Button variant="outline" className="w-full h-12" type="button">
-									Sign In
-								</Button>
-							</Link>
-						</CardFooter>
-					</form>
-				</Card>
-
-				<p className="text-center text-sm text-muted-foreground mt-6">
-					Free forever • No credit card required
-				</p>
+function BenefitItem({ icon, title, desc }: { icon: React.ReactNode, title: string, desc: string }) {
+	return (
+		<div className="flex gap-4">
+			<div className="shrink-0 bg-white/5 p-2.5 rounded-xl border border-white/10 h-fit">
+				{icon}
+			</div>
+			<div className="space-y-1">
+				<h4 className="text-sm font-bold text-white">{title}</h4>
+				<p className="text-xs text-slate-400 leading-relaxed font-medium">{desc}</p>
 			</div>
 		</div>
 	);
