@@ -13,6 +13,8 @@ const fontMono = Geist_Mono({
 	variable: "--font-mono",
 });
 
+import { Suspense } from "react";
+
 export default function RootLayout({
 	children,
 }: Readonly<{
@@ -23,7 +25,11 @@ export default function RootLayout({
 			<body
 				className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased`}
 			>
-				<Providers>{children}</Providers>
+				<Suspense>
+					<Providers>
+						{children}
+					</Providers>
+				</Suspense>
 			</body>
 		</html>
 	);
