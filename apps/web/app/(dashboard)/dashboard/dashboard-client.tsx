@@ -51,6 +51,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@hvault/ui/components/dropdown-menu";
+import Image from "next/image";
 
 interface Record {
 	id: string;
@@ -476,7 +477,13 @@ function RecordCard({
 						className="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm"
 						title="View Hedera Proof"
 					>
-						<Shield className="h-3.5 w-3.5" />
+							<Image 
+						src="/logo.png" 
+						alt="MediVault Logo" 
+						width={15} 
+						height={15} 
+						className="rounded-full"
+					/>
 					</a>
 				)}
 			</div>

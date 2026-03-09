@@ -1,8 +1,8 @@
-import { Shield, Plus } from "lucide-react";
 import Link from "next/link";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@hvault/ui/components/button";
 import { SidebarLinks } from "@/components/sidebar-links";
+import Image from "next/image";
 
 export default function DashboardLayout({
 	children,
@@ -15,9 +15,13 @@ export default function DashboardLayout({
 			<aside className="fixed inset-y-0 left-0 w-64 bg-white border-r hidden lg:flex flex-col z-50">
 				<div className="p-6 border-b">
 					<Link href="/dashboard" className="flex items-center space-x-3">
-						<div className="bg-blue-600 p-2 rounded-xl shadow-blue-200 shadow-lg">
-							<Shield className="h-5 w-5 text-white" />
-						</div>
+					<Image 
+						src="/logo.png" 
+						alt="MediVault Logo" 
+						width={40} 
+						height={40} 
+						className="rounded-full"
+					/>
 						<span className="text-xl font-bold tracking-tight text-slate-900">
 							MediVault
 						</span>
@@ -30,7 +34,13 @@ export default function DashboardLayout({
 					<div className="flex items-center justify-between px-3 py-2">
 						<div className="flex items-center gap-2">
 							<div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
-								<Shield className="h-4 w-4" />
+									<Image 
+						src="/logo.png" 
+						alt="MediVault Logo" 
+						width={40} 
+						height={40} 
+						className="rounded-full"
+					/>
 							</div>
 							<div className="flex flex-col overflow-hidden">
 								<span className="text-xs font-bold text-slate-900 truncate">Patient Vault</span>
@@ -47,7 +57,13 @@ export default function DashboardLayout({
 				{/* Top Navigation - Mobile & Actions */}
 				<header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b h-16 flex items-center justify-between px-4 lg:px-8">
 					<div className="flex items-center lg:hidden">
-						<Shield className="h-6 w-6 text-blue-600 mr-2" />
+						<Image 
+						src="/logo.png" 
+						alt="MediVault Logo" 
+						width={40} 
+						height={40} 
+						className="rounded-full"
+					/>
 						<span className="font-bold text-lg">MediVault</span>
 					</div>
 					
@@ -79,7 +95,8 @@ export default function DashboardLayout({
 
 function PlusIcon({ className }: { className?: string }) {
 	return (
-		<svg 
+		// biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
+<svg 
 			className={className} 
 			fill="none" 
 			viewBox="0 0 24 24" 

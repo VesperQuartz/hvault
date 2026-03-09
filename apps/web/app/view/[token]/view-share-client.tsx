@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import { shareApi, formatHederaTxId } from "@/lib/api";
 import { Button } from "@hvault/ui/components/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@hvault/ui/components/card";
-import { Alert, AlertDescription } from "@hvault/ui/components/alert";
-import { CheckCircle, XCircle, Shield, ExternalLink, Download, AlertTriangle, ArrowLeft, Eye, FileText, Fingerprint, Lock, ShieldCheck, Clock } from "lucide-react";
+import {  XCircle, Shield , Download, AlertTriangle,  Eye, FileText, Fingerprint, Lock, ShieldCheck, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useSession } from "@/lib/auth-client";
 import Link from "next/link";
@@ -46,12 +45,6 @@ export default function ViewShareClient({ token, initialInfo }: ViewShareClientP
 		hederaTransaction: string;
 	} | null>(null);
 	const [viewLoading, setViewLoading] = useState(false);
-
-	useEffect(() => {
-		if (!initialInfo) {
-			loadInfo();
-		}
-	}, [token, initialInfo]);
 
 	const loadInfo = async () => {
 		try {
@@ -110,6 +103,13 @@ export default function ViewShareClient({ token, initialInfo }: ViewShareClientP
 		return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
 	};
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	useEffect(() => {
+		if (!initialInfo) {
+			loadInfo();
+		}
+	}, [initialInfo]);
+
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center min-h-screen bg-[#f8fafc]">
@@ -149,11 +149,8 @@ export default function ViewShareClient({ token, initialInfo }: ViewShareClientP
 						</div>
 						<div className="space-y-2">
 							<h2 className="text-2xl font-black text-slate-900 tracking-tight">Access Denied</h2>
-							<p className="text-slate-500 font-medium">{error}</p>
+							<p className="text-slate-500 font-medium">Link expired or invalid.</p>
 						</div>
-						<Link href="/">
-							<Button variant="outline" className="rounded-full px-8">Return Home</Button>
-						</Link>
 					</div>
 				) : info && (
 					<div className="grid lg:grid-cols-3 gap-10 items-start">

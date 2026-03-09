@@ -14,8 +14,11 @@ import {
 	Check,
 	Clock,
 	Copy,
+	QrCode,
 	Trash2,
+	X,
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { useState } from "react";
 import { queryKeys, shareApi } from "@/lib/api";
 import { revalidateRecords } from "@/app/actions";
@@ -36,6 +39,7 @@ export default function ManageLinksDialog({
 }: ManageLinksDialogProps) {
 	const queryClient = useQueryClient();
 	const [copiedId, setCopiedId] = useState<string | null>(null);
+	const [showQRForId, setShowQRForId] = useState<string | null>(null);
 
 	// Fetch existing share links
 	const { data: activeLinksData, isLoading } = useQuery({
@@ -97,49 +101,84 @@ export default function ManageLinksDialog({
 									key={link.id}
 									className="bg-gray-50 border rounded-lg p-3 space-y-2"
 								>
-									<div className="flex items-center justify-between">
-										<Badge
-											variant={link.isExpired ? "secondary" : "outline"}
-											className="text-[10px]"
-										>
-											{link.isExpired ? "Expired" : "Active"}
-										</Badge>
-										<div className="flex items-center gap-1.5">
+									{showQRForId === link.id ? (
+										<div className="flex flex-col items-center justify-center p-4 space-y-4">
+											<div className="bg-white p-2 rounded-lg shadow-sm border border-slate-100">
+												<QRCodeSVG
+													value={link.url}
+													size={160}
+													level="H"
+													includeMargin={true}
+												/>
+											</div>
 											<Button
 												variant="ghost"
-												size="icon"
-												className="h-7 w-7 text-gray-500"
-												onClick={() => handleCopy(link.url, link.id)}
+												size="sm"
+												onClick={() => setShowQRForId(null)}
+												className="text-xs h-8"
 											>
-												{copiedId === link.id ? (
-													<Check className="h-3.5 w-3.5 text-green-600" />
-												) : (
-													<Copy className="h-3.5 w-3.5" />
-												)}
-											</Button>
-											<Button
-												variant="ghost"
-												size="icon"
-												className="h-7 w-7 text-red-500 hover:bg-red-50 hover:text-red-600"
-												disabled={revokeMutation.isPending}
-												onClick={() => revokeMutation.mutate(link.id)}
-											>
-												<Trash2 className="h-3.5 w-3.5" />
+												<X className="h-3.5 w-3.5 mr-1.5" />
+												Hide QR Code
 											</Button>
 										</div>
-									</div>
-									<div className="text-xs space-y-1">
-										<div className="flex items-center gap-1.5 text-muted-foreground">
-											<Clock className="h-3 w-3" />
-											<span>
-												Expires: {new Date(link.expiresAt).toLocaleString()}
-											</span>
-										</div>
-										<div className="flex items-center gap-1.5 text-muted-foreground">
-											<Check className="h-3 w-3" />
-											<span>Accessed: {link.accessCount} times</span>
-										</div>
-									</div>
+									) : (
+										<>
+											<div className="flex items-center justify-between">
+												<Badge
+													variant={link.isExpired ? "secondary" : "outline"}
+													className="text-[10px]"
+												>
+													{link.isExpired ? "Expired" : "Active"}
+												</Badge>
+												<div className="flex items-center gap-1">
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-7 w-7 text-gray-500"
+														onClick={() => handleCopy(link.url, link.id)}
+														title="Copy Link"
+													>
+														{copiedId === link.id ? (
+															<Check className="h-3.5 w-3.5 text-green-600" />
+														) : (
+															<Copy className="h-3.5 w-3.5" />
+														)}
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-7 w-7 text-gray-500"
+														onClick={() => setShowQRForId(link.id)}
+														title="Show QR Code"
+													>
+														<QrCode className="h-3.5 w-3.5" />
+													</Button>
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-7 w-7 text-red-500 hover:bg-red-50 hover:text-red-600"
+														disabled={revokeMutation.isPending}
+														onClick={() => revokeMutation.mutate(link.id)}
+														title="Revoke Link"
+													>
+														<Trash2 className="h-3.5 w-3.5" />
+													</Button>
+												</div>
+											</div>
+											<div className="text-xs space-y-1">
+												<div className="flex items-center gap-1.5 text-muted-foreground">
+													<Clock className="h-3 w-3" />
+													<span>
+														Expires: {new Date(link.expiresAt).toLocaleString()}
+													</span>
+												</div>
+												<div className="flex items-center gap-1.5 text-muted-foreground">
+													<Check className="h-3 w-3" />
+													<span>Accessed: {link.accessCount} times</span>
+												</div>
+											</div>
+										</>
+									)}
 								</div>
 							))}
 						</div>
