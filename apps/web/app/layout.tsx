@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 
 import "@hvault/ui/globals.css";
+import { Analytics } from "@vercel/analytics/next"
 import { Providers } from "@/components/providers";
 
 const fontSans = Geist({
@@ -29,6 +30,7 @@ export default function RootLayout({
 					<Providers>
 						{children}
 					</Providers>
+					<Analytics />
 				</Suspense>
 			</body>
 		</html>
