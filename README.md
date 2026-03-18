@@ -1,3 +1,4 @@
+[![MediVault](https://img.youtube.com/vi/m6Ow-rSQMbI/0.jpg)](https://www.youtube.com/watch?v=m6Ow-rSQMbI)
 # hvault: Secure Medical Records Locker
 
 ## 1. Solution
